@@ -6,8 +6,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 add_library(minic_frontend
+  src/ast_printer.cpp
   src/lexer.cpp
+  src/parser.cpp
   src/token.cpp
 )
 target_include_directories(minic_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -18,6 +24,14 @@ target_link_libraries(minic PRIVATE minic_frontend)
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_parser_tests tests/parser_test.cpp)
+  target_link_libraries(minic_parser_tests PRIVATE minic_frontend)
+
+  foreach(case IN ITEMS functions empty precedence operators associativity parentheses
+                        literals positions syntax_errors)
+    add_test(NAME parser.${case} COMMAND minic_parser_tests ${case})
+  endforeach()
+
   add_executable(minic_lexer_tests tests/lexer_test.cpp)
   target_link_libraries(minic_lexer_tests PRIVATE minic_frontend)
 
@@ -28,7 +42,9 @@ if(BUILD_TESTING)
   endforeach()
 
   foreach(case IN ITEMS hello help empty keywords missing_file invalid_character
-                        unterminated_comment missing_argument language invalid_logical)
+                        unterminated_comment missing_argument language invalid_logical
+                        ast_hello ast_expressions ast_empty ast_syntax_error ast_lexical_error
+                        ast_missing_file ast_missing_argument ast_extra_argument)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"

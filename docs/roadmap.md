@@ -76,8 +76,7 @@ The completion work uses two local commits, with a build, tests, and prose revie
 The first commit adds the keywords, keyword boundary tests, and documentation.
 The second commit adds operators and the comma, regression tests, and an example with expected command output.
 
-Phase 1 is the implementation boundary for this work.
-Do not start the parser without separate approval after phase 1 is complete.
+Phase 1 is complete. The parser scope received separate approval.
 
 The first increment reads `examples/hello.mc` and reports token types, text, and positions.
 The lexer reports unsupported characters and unterminated block comments.
@@ -85,10 +84,29 @@ The lexer recognizes all 33 token types in the agreed scope.
 The 21 tests cover keywords, identifier boundaries, operators, comments, source positions, and command behavior.
 The [lexer example](../examples/lexer.mc) contains every token type.
 Its expected command output lives in [tests/lexer.tokens](../tests/lexer.tokens).
-Phase 1 is complete. Phase 2 remains pending.
+Phase 1 is complete. Phase 2 is in progress.
 See [language.md](language.md) for lexical rules and [architecture.md](architecture.md) for the implementation.
 
 ## Phase 2: Recursive-descent parser
+
+Status: in progress.
+
+The approved grammar and operator rules live in [language.md](language.md#phase-2-grammar).
+AST ownership and parser boundaries live in [architecture.md](architecture.md).
+Implementation uses three local increments:
+
+1. Expressions, functions without parameters, blocks, return statements, AST output, examples, and tests.
+2. Local declarations, expression statements, empty statements, parameters, calls, and their tests.
+3. `if`/`else`, `while`, nearest-`if` tests, and complete example coverage.
+
+Each increment includes documentation, a build without warnings, applicable tests, and a diff review before its local commit.
+The final validation also uses AddressSanitizer and UndefinedBehaviorSanitizer.
+Semantic analysis and execution remain outside phase 2.
+
+Increment 1 is complete: expressions without calls, functions without parameters, blocks, returns, and the AST command.
+The [expression example](../examples/expressions.mc) has an expected tree in [tests/expressions.ast](../tests/expressions.ast).
+The 38 tests include the original 21 lexer and command tests.
+Parameters, declarations, calls, expression statements, and control flow remain pending.
 
 Lookup terms: `context-free grammar`, `CFG`, `derivation`, `parse tree`, `abstract syntax tree`, `AST`, `recursive-descent parsing`, `predictive parsing`, `LL(1)`, `lookahead`, `operator precedence`, `associativity`, `left recursion`, `syntax error recovery`, `panic mode`
 

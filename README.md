@@ -44,7 +44,11 @@ The lexer recognizes `int`, `bool`, `void`, `if`, `else`, `while`, `return`, `tr
 It also recognizes identifiers, decimal integers, punctuation, and all operators in the phase 1 scope.
 The lexer chooses the longest supported operator and distinguishes division from comments.
 Phase 1 is complete, with 33 token types including `EOF`.
-The program does not yet check syntax, check types, or execute Mini-C programs.
+The parser builds an abstract syntax tree (AST), which records program structure.
+The `--ast` command prints the tree after lexing and parsing succeed.
+The first parser increment supports expressions, functions without parameters, blocks, and return statements.
+Declarations, parameters, calls, and control flow remain pending within phase 2.
+The program does not analyze Mini-C types or execute programs.
 See [docs/language.md](docs/language.md) for the exact lexical rules.
 
 ## Build and use
@@ -56,6 +60,8 @@ cmake -S . -B build
 cmake --build build
 ./build/minic --tokens examples/hello.mc
 ./build/minic --tokens examples/lexer.mc
+./build/minic --ast examples/hello.mc
+./build/minic --ast examples/expressions.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -76,6 +82,9 @@ The token output includes the source position and ends with `EOF`:
 Use `./build/minic --help` to see the available commands.
 The [lexer example](examples/lexer.mc) includes every token type, with commas in parameters and calls.
 Its expected output lives in [tests/lexer.tokens](tests/lexer.tokens).
+The [expression example](examples/expressions.mc) demonstrates precedence, grouping, and assignment without evaluating them.
+Its expected tree lives in [tests/expressions.ast](tests/expressions.ast).
+The lexer example requires later parser increments before `--ast` accepts it.
 
 ## Tests
 
@@ -85,7 +94,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 21 tests cover token types, text, positions, comments, lexical errors, and command behavior.
+The 38 tests cover tokens, source positions, lexical errors, expression trees, syntax errors, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 
@@ -111,7 +120,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 |------:|-------|--------|
 | 0 | Project scaffold | done |
 | 1 | Lexer (+ tests) | done |
-| 2 | Recursive-descent parser | pending |
+| 2 | Recursive-descent parser | in progress |
 | 3 | Parsing theory (First/Follow, bottom-up) | pending |
 | 4 | Symbol table / scopes | pending |
 | 5 | Type checking | pending |
@@ -124,5 +133,5 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 12 | LLVM literacy | pending |
 | 13 | Wrap-up / portfolio polish | pending |
 
-The next implementation phase is the parser, which requires separate approval.
+Phase 2 follows the approved parser scope and remains in progress until all grammar rules pass their tests.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

@@ -63,14 +63,16 @@ cmake -S . -B build
 cmake --build build
 ./build/minic --help
 ./build/minic --tokens examples/hello.mc
+./build/minic --ast examples/hello.mc
 ctest --test-dir build --output-on-failure
 ```
 
 CTest is part of CMake.
 CMake enables tests by default.
 The tests use only the C++ standard library and CMake.
-The C++ tests compare token types, text, positions, and lexical errors.
+The C++ tests compare tokens, AST structure, source positions, and lexical or syntax errors.
 The command tests compare output, diagnostics, and exit codes.
+CMake enables `-Wall -Wextra -Wpedantic` for Clang and GCC, including test targets.
 
 ## Conventions
 

@@ -66,8 +66,8 @@ The characters `&` and `|` alone must remain lexical errors.
 
 This phase preserves token text ownership, source positions, comment rules, diagnostics, and command exit codes.
 It excludes strings, floating-point numbers, arrays, pointers, preprocessing, bitwise operators, compound assignment, and increment or decrement operators.
-Syntax and type analysis belong to later phases.
-Parser implementation requires separate approval after phase 1 is complete.
+Phase 1 excludes syntax and type analysis.
+The approved phase 2 scope appears below.
 Delivery progress lives in [roadmap.md](roadmap.md).
 
 ## Implemented lexical rules
@@ -143,6 +143,109 @@ The command emits the complete token list only if lexing succeeds.
 The command returns `0` on success.
 It returns `1` for lexical errors, file errors, or invalid arguments.
 Diagnostics go to standard error, and lexical errors include the file path, line, and column.
+
+## Phase 2 grammar
+
+The parser builds an abstract syntax tree (AST), which records program structure.
+The following grammar defines the approved phase 2 scope.
+Braces mean repetition, and brackets mean an optional part.
+Quoted text names a token spelling.
+
+```ebnf
+program          = { function }, EOF ;
+function         = type, IDENTIFIER, "(", [ parameters ], ")", block ;
+type             = "int" | "bool" | "void" ;
+parameters       = parameter, { ",", parameter } ;
+parameter        = type, IDENTIFIER ;
+block            = "{", { declaration | statement }, "}" ;
+declaration      = type, IDENTIFIER, [ "=", expression ], ";" ;
+statement        = block | if_statement | while_statement | return_statement
+                 | [ expression ], ";" ;
+if_statement     = "if", "(", expression, ")", statement, [ "else", statement ] ;
+while_statement  = "while", "(", expression, ")", statement ;
+return_statement = "return", [ expression ], ";" ;
+expression       = assignment ;
+assignment       = logical_or, [ "=", assignment ] ;
+logical_or       = logical_and, { "||", logical_and } ;
+logical_and      = equality, { "&&", equality } ;
+equality         = comparison, { ( "==" | "!=" ), comparison } ;
+comparison       = additive, { ( "<" | "<=" | ">" | ">=" ), additive } ;
+additive         = multiplicative, { ( "+" | "-" ), multiplicative } ;
+multiplicative   = unary, { ( "*" | "/" | "%" ), unary } ;
+unary            = ( "!" | "-" ), unary | primary ;
+primary          = INTEGER | "true" | "false"
+                 | IDENTIFIER, [ "(", [ arguments ], ")" ]
+                 | "(", expression, ")" ;
+arguments        = expression, { ",", expression } ;
+```
+
+A program contains only function definitions at file scope.
+An empty program is valid syntax, and the parser does not require a `main` function.
+Function prototypes, nested functions, and global variables are outside phase 2.
+Each parameter requires a type and a name. The empty parameter list uses `()`, not `(void)`.
+Parameter lists and argument lists do not accept a trailing comma.
+Calls use a function name. The grammar excludes chained calls and calls through other expressions.
+
+A declaration introduces one name, with an optional initializer.
+Declarations occur only within blocks, with no required ordering relative to statements.
+An `if` or `while` body accepts one statement, with optional braces.
+A declaration in either body requires a block.
+A return accepts either `return;` or `return expression;`.
+
+An `else` belongs to the nearest preceding `if` that has no `else`.
+The parser consumes the complete body of an `if` before it looks for that `if`'s optional `else`.
+An inner `if` therefore consumes its own `else` first.
+An `else if` is an `else` whose statement is another `if`.
+
+### Precedence and associativity
+
+The table lists precedence from lowest to highest.
+Associativity determines grouping within one level.
+
+| Operators | Associativity |
+|-----------|---------------|
+| `=` | Right |
+| `\|\|` | Left |
+| `&&` | Left |
+| `==`, `!=` | Left |
+| `<`, `<=`, `>`, `>=` | Left |
+| Binary `+`, `-` | Left |
+| `*`, `/`, `%` | Left |
+| Unary `!`, `-` | Right |
+| Named calls and primary expressions | Primary syntax |
+
+Parentheses override precedence and do not produce a separate AST node.
+An assignment requires a name as its left operand, including a parenthesized name.
+For example, `a = b = 1` groups as `a = (b = 1)`.
+The parser rejects `a + b = 1` at the assignment token.
+This rule concerns syntax, without name resolution or type analysis.
+
+The `+` operator is binary only.
+The token sequence `++` cannot form an expression in this grammar.
+Two unary minus tokens can form nested negation, as in `--x`, without a decrement operation.
+Compound assignment remains outside the language.
+
+### Syntax and Mini-C types
+
+The AST records `int`, `bool`, and `void` as type syntax.
+The parser accepts each type keyword in return types, parameters, and declarations.
+Later semantic analysis will determine whether a use of `void` is valid.
+The parser does not resolve names, compare types, count call parameters, or require matching return values.
+For example, undeclared names and `true + 1` remain valid syntax.
+Integer literals preserve their decimal text, including leading zeroes, without conversion or numeric limits.
+
+### AST command and errors
+
+From the repository root, operate `./build/minic --ast examples/hello.mc` after the build.
+The command completes lexing before parsing.
+A lexical error therefore takes priority over a syntax error elsewhere in the file.
+The parser stops at its first syntax error, without recovery or a partial AST result.
+It reports the unexpected token position, including the lexer's exact `EOF` position.
+
+On success, the command prints the complete indented AST and returns `0`.
+On failure, it prints no AST, writes a diagnostic to standard error, and returns `1`.
+Diagnostics use `file:line:column: error: message`.
+The existing `--tokens` mode performs no parsing and preserves its output, diagnostics, and exit codes.
 
 ## Planned language scope
 

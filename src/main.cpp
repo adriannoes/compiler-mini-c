@@ -1,4 +1,6 @@
+#include "ast_printer.hpp"
 #include "lexer.hpp"
+#include "parser.hpp"
 
 #include <fstream>
 #include <iomanip>
@@ -14,8 +16,10 @@ void print_usage() {
       << "Usage:\n"
       << "  minic --help\n"
       << "  minic --tokens <file>\n"
+      << "  minic --ast <file>\n"
       << "\n"
-      << "Print token types, source text, and line:column positions.\n";
+      << "Print token types, source text, and line:column positions.\n"
+      << "Use --ast to print the syntax tree.\n";
 }
 
 }  // namespace
@@ -29,7 +33,12 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (argc != 3 || std::string(argv[1]) != "--tokens") {
+  const bool ast_mode = argc >= 2 && std::string(argv[1]) == "--ast";
+  if (argc != 3 || (!ast_mode && std::string(argv[1]) != "--tokens")) {
+    if (ast_mode) {
+      std::cerr << "minic: error: Expected --ast <file>. Use --help for usage.\n";
+      return 1;
+    }
     std::cerr << "minic: error: Expected --tokens <file>. Use --help for usage.\n";
     return 1;
   }
@@ -53,12 +62,20 @@ int main(int argc, char** argv) {
 
   try {
     const auto tokens = minic::lex(source);
-    for (const auto& token : tokens) {
-      std::cout << token.location.line << ':' << token.location.column << ' '
-                << minic::token_kind_name(token.kind) << ' '
-                << std::quoted(token.lexeme) << '\n';
+    if (ast_mode) {
+      std::cout << minic::print_ast(minic::parse(tokens));
+    } else {
+      for (const auto& token : tokens) {
+        std::cout << token.location.line << ':' << token.location.column << ' '
+                  << minic::token_kind_name(token.kind) << ' '
+                  << std::quoted(token.lexeme) << '\n';
+      }
     }
   } catch (const minic::LexError& error) {
+    std::cerr << path << ':' << error.location.line << ':'
+              << error.location.column << ": error: " << error.what() << '\n';
+    return 1;
+  } catch (const minic::ParseError& error) {
     std::cerr << path << ':' << error.location.line << ':'
               << error.location.column << ": error: " << error.what() << '\n';
     return 1;
