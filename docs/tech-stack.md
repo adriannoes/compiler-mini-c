@@ -30,7 +30,7 @@ related:
 | Host language | C++17 | Matches the college compilers course style |
 | Build | CMake 3.20+ | Out-of-source builds in `build/` |
 | Binary | `minic` | CLI entry point under `src/main.cpp` |
-| Tests | Grow from phase 1 | Golden/unit tests under `tests/`; required each phase |
+| Tests | CTest and a C++ test executable | Unit tests and command tests under `tests/` |
 | VCS | Git (local) | Public GitHub later for portfolio |
 | LLVM tools | Optional (phase 12) | `clang -emit-llvm`, `opt`, `llc` for literacy labs only |
 
@@ -38,7 +38,7 @@ related:
 
 | Tool | Role |
 |------|------|
-| Apple Clang (`c++` / `clang`) | Compile C++; later emit sample LLVM IR |
+| Apple Clang (`c++` / `clang`) | Compile C++ and later emit sample LLVM IR |
 | CMake (Homebrew) | Configure and build |
 | Make (CMake generator) | Drive the compile |
 
@@ -54,17 +54,27 @@ compiler-mini-c/
 └── tests/                 # automated checks
 ```
 
-## Build
+## Build and test
+
+From the repository root, configure and build the project:
 
 ```bash
 cmake -S . -B build
 cmake --build build
 ./build/minic --help
+./build/minic --tokens examples/hello.mc
+ctest --test-dir build --output-on-failure
 ```
+
+CTest is part of CMake.
+CMake enables tests by default.
+The tests use only the C++ standard library and CMake.
+The C++ tests compare token types, text, positions, and lexical errors.
+The command tests compare output, diagnostics, and exit codes.
 
 ## Conventions
 
 - English only: docs, comments, commit messages, user-facing diagnostics
-- No parser generators in production code (flex/bison/ANTLR); hand-written stages
+- Hand-written stages without parser generators such as flex, bison, or ANTLR
 - Bottom-up / LLVM depth lives in theory docs for literacy, not as the career target
 - Prefer small, testable increments aligned with [roadmap.md](roadmap.md)

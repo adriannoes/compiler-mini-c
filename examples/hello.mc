@@ -1,4 +1,4 @@
-/* Phase 0 placeholder. Real Mini-C syntax arrives with the lexer/parser. */
+/* Minimal program for the token dump. */
 
 int main() {
   return 0;
