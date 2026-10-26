@@ -105,15 +105,17 @@ Semantic analysis and execution remain outside phase 2.
 
 Increment 1 is complete: expressions without calls, functions without parameters, blocks, returns, and the AST command.
 The [expression example](../examples/expressions.mc) has an expected tree in [tests/expressions.ast](../tests/expressions.ast).
-The 38 tests include the original 21 lexer and command tests.
-Parameters, declarations, calls, expression statements, and control flow remain pending.
+Increment 2 is complete: parameters, local declarations, calls, expression statements, and empty statements.
+The [call example](../examples/calls.mc) has an expected tree in [tests/calls.ast](../tests/calls.ast).
+The 44 tests include the original 21 lexer and command tests.
+Control flow remains pending.
 
 Lookup terms: `context-free grammar`, `CFG`, `derivation`, `parse tree`, `abstract syntax tree`, `AST`, `recursive-descent parsing`, `predictive parsing`, `LL(1)`, `lookahead`, `operator precedence`, `associativity`, `left recursion`, `syntax error recovery`, `panic mode`
 
-- [ ] Parse expressions with correct precedence
+- [x] Parse expressions with correct precedence
 - [ ] Parse statements and blocks
-- [ ] Build a typed AST in C++
-- [ ] AST printer
+- [x] Build a typed AST in C++
+- [x] AST printer
 - [ ] Parser tests (valid programs + expected syntax errors)
 
 ## Phase 3: Parsing theory (literacy, little or no production code)

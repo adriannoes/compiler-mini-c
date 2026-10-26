@@ -179,6 +179,108 @@ void positions() {
   name(*addition.right, "value");
 }
 
+void expect_syntax_error(std::string_view source, minic::SourceLocation expected_location,
+                         std::string_view message) {
+  try {
+    minic::parse(minic::lex(source));
+  } catch (const minic::ParseError& error) {
+    location(error.location, expected_location.line, expected_location.column);
+    require(error.what() == message, "Unexpected diagnostic: " + std::string(error.what()));
+    return;
+  }
+  throw std::runtime_error("Expected a syntax error.");
+}
+
+void declarations() {
+  const auto program = minic::parse(minic::lex(
+      "int f() {\nint value;\nvalue = 007;\nbool flag = true;\n"
+      "{ int value = 2; }\n;\nreturn flag;\n}"));
+  const auto& statements = program.functions[0].body.statements;
+  require(statements.size() == 6, "Expected six block items.");
+  const auto& value = std::get<minic::VarDecl>(statements[0]->node);
+  require(value.name == "value" && value.type.keyword == TokenKind::KwInt && !value.initializer,
+          "Expected a declaration without an initializer.");
+  location(value.location, 2, 5);
+  location(value.type.location, 2, 1);
+  const auto& assignment = node<minic::AssignmentExpr>(
+      *std::get<minic::ExprStmt>(statements[1]->node).expression);
+  name(*assignment.target, "value");
+  integer(*assignment.value, "007");
+  const auto& flag = std::get<minic::VarDecl>(statements[2]->node);
+  require(flag.name == "flag" && flag.type.keyword == TokenKind::KwBool &&
+              node<minic::BooleanExpr>(*flag.initializer).value,
+          "Expected a bool declaration with an initializer.");
+  const auto& inner = std::get<minic::BlockStmt>(statements[3]->node);
+  integer(*std::get<minic::VarDecl>(inner.statements[0]->node).initializer, "2");
+  location(std::get<minic::EmptyStmt>(statements[4]->node).location, 6, 1);
+  name(*std::get<minic::ReturnStmt>(statements[5]->node).value, "flag");
+}
+
+void parameters() {
+  const auto program = minic::parse(minic::lex("int sum(int a, bool enabled, void marker) {}"));
+  const auto& parameters = program.functions[0].parameters;
+  require(parameters.size() == 3, "Expected three parameters.");
+  require(parameters[0].name == "a" && parameters[0].type.keyword == TokenKind::KwInt,
+          "Unexpected first parameter.");
+  require(parameters[1].name == "enabled" && parameters[1].type.keyword == TokenKind::KwBool,
+          "Unexpected second parameter.");
+  require(parameters[2].name == "marker" && parameters[2].type.keyword == TokenKind::KwVoid,
+          "Expected void parameter syntax without type analysis.");
+  location(parameters[0].location, 1, 13);
+  location(parameters[0].type.location, 1, 9);
+}
+
+void calls() {
+  const auto result = expression("-add(1 + 2, other(), x = 3) * 4");
+  const auto& product = binary(*result, TokenKind::Star);
+  integer(*product.right, "4");
+  const auto& negation = node<minic::UnaryExpr>(*product.left);
+  require(negation.op == TokenKind::Minus, "Expected unary minus before the call.");
+  const auto& call = node<minic::CallExpr>(*negation.operand);
+  require(call.name == "add" && call.arguments.size() == 3, "Unexpected call arguments.");
+  const auto& sum = binary(*call.arguments[0], TokenKind::Plus);
+  integer(*sum.left, "1");
+  integer(*sum.right, "2");
+  const auto& nested = node<minic::CallExpr>(*call.arguments[1]);
+  require(nested.name == "other" && nested.arguments.empty(), "Expected a call without arguments.");
+  const auto& assignment = node<minic::AssignmentExpr>(*call.arguments[2]);
+  name(*assignment.target, "x");
+  integer(*assignment.value, "3");
+}
+
+void syntax_only() {
+  const auto program = minic::parse(minic::lex(
+      "void f(void p) { void x; int x; bool y = 1; missing(true, x); return 42; }"));
+  require(program.functions.size() == 1 && program.functions[0].body.statements.size() == 5,
+          "Expected syntax parsing without semantic analysis.");
+}
+
+void declaration_call_errors() {
+  const struct {
+    const char* source;
+    const char* message;
+  } cases[] = {
+      {"int f(int\n) {}", "Expected a parameter name. Received RIGHT_PAREN."},
+      {"int f(int a,\n) {}", "Expected a type. Received RIGHT_PAREN."},
+      {"int f(int a\nbool b) {}", "Expected \")\" after parameters. Received BOOL."},
+      {"int f(void\n) {}", "Expected a parameter name. Received RIGHT_PAREN."},
+      {"int f() { int\n= 1; }", "Expected a variable name. Received ASSIGN."},
+      {"int f() { int a =\n; }", "Expected an expression. Received SEMICOLON."},
+      {"int f() { int a\n, b; }", "Expected \";\" after declaration. Received COMMA."},
+      {"int f() { int a\n}", "Expected \";\" after declaration. Received RIGHT_BRACE."},
+      {"int f() { g(1\n2); }", "Expected \")\" after arguments. Received INTEGER."},
+      {"int f() { g(1,\n); }", "Expected an expression. Received RIGHT_PAREN."},
+      {"int f() { g(1\n; }", "Expected \")\" after arguments. Received SEMICOLON."},
+      {"int f() { g()\n(); }", "Expected \";\" after expression. Received LEFT_PAREN."},
+      {"int f() { (g)\n(); }", "Expected \";\" after expression. Received LEFT_PAREN."},
+      {"int f() { g()\n= 1; }", "Expected a name before \"=\"."},
+      {"int f() { int g\n() {} }", "Expected \";\" after declaration. Received LEFT_PAREN."},
+  };
+  for (const auto& test : cases) {
+    expect_syntax_error(test.source, {2, 1}, test.message);
+  }
+}
+
 void syntax_errors() {
   const struct {
     const char* source;
@@ -201,15 +303,7 @@ void syntax_errors() {
       {"int f() {} 1", {1, 12}, "Expected a type. Received INTEGER."},
   };
   for (const auto& test : cases) {
-    try {
-      minic::parse(minic::lex(test.source));
-    } catch (const minic::ParseError& error) {
-      location(error.location, test.location.line, test.location.column);
-      require(error.what() == std::string_view(test.message),
-              "Unexpected diagnostic: " + std::string(error.what()));
-      continue;
-    }
-    throw std::runtime_error("Expected a syntax error.");
+    expect_syntax_error(test.source, test.location, test.message);
   }
 }
 
@@ -228,6 +322,8 @@ int main(int argc, char** argv) {
       {"operators", all_operators}, {"associativity", associativity},
       {"parentheses", parentheses}, {"literals", literals},
       {"positions", positions}, {"syntax_errors", syntax_errors},
+      {"declarations", declarations}, {"parameters", parameters}, {"calls", calls},
+      {"syntax_only", syntax_only}, {"declaration_call_errors", declaration_call_errors},
   };
   for (const auto& test : cases) {
     if (std::string_view(argv[1]) == test.name) {

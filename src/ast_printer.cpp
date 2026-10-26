@@ -14,15 +14,25 @@ class AstPrinter {
       indent(1);
       output_ << "Function " << std::quoted(function.name);
       position(function.location);
-      indent(2);
-      output_ << "Type " << token_kind_name(function.return_type.keyword);
-      position(function.return_type.location);
+      print(function.return_type, 2);
+      for (const auto& parameter : function.parameters) {
+        indent(2);
+        output_ << "Parameter " << std::quoted(parameter.name);
+        position(parameter.location);
+        print(parameter.type, 3);
+      }
       print(function.body, 2);
     }
     return output_.str();
   }
 
  private:
+  void print(const TypeSyntax& type, std::size_t depth) {
+    indent(depth);
+    output_ << "Type " << token_kind_name(type.keyword);
+    position(type.location);
+  }
+
   void indent(std::size_t depth) {
     output_ << std::string(depth * 2, ' ');
   }
@@ -76,6 +86,15 @@ class AstPrinter {
     print(*node.value, depth + 1);
   }
 
+  void print(const CallExpr& node, SourceLocation location, std::size_t depth) {
+    indent(depth);
+    output_ << "Call " << std::quoted(node.name);
+    position(location);
+    for (const auto& argument : node.arguments) {
+      print(*argument, depth + 1);
+    }
+  }
+
   void print(const Stmt& statement, std::size_t depth) {
     std::visit([&](const auto& node) { print(node, depth); }, statement.node);
   }
@@ -96,6 +115,29 @@ class AstPrinter {
     if (node.value) {
       print(*node.value, depth + 1);
     }
+  }
+
+  void print(const VarDecl& node, std::size_t depth) {
+    indent(depth);
+    output_ << "Variable " << std::quoted(node.name);
+    position(node.location);
+    print(node.type, depth + 1);
+    if (node.initializer) {
+      print(*node.initializer, depth + 1);
+    }
+  }
+
+  void print(const ExprStmt& node, std::size_t depth) {
+    indent(depth);
+    output_ << "Expression";
+    position(node.location);
+    print(*node.expression, depth + 1);
+  }
+
+  void print(const EmptyStmt& node, std::size_t depth) {
+    indent(depth);
+    output_ << "Empty";
+    position(node.location);
   }
 
   std::ostringstream output_;

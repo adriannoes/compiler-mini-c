@@ -46,8 +46,8 @@ The lexer chooses the longest supported operator and distinguishes division from
 Phase 1 is complete, with 33 token types including `EOF`.
 The parser builds an abstract syntax tree (AST), which records program structure.
 The `--ast` command prints the tree after lexing and parsing succeed.
-The first parser increment supports expressions, functions without parameters, blocks, and return statements.
-Declarations, parameters, calls, and control flow remain pending within phase 2.
+The parser supports expressions, functions with parameters, named calls, local declarations, blocks, and return statements.
+The `if`/`else` and `while` statements remain pending within phase 2.
 The program does not analyze Mini-C types or execute programs.
 See [docs/language.md](docs/language.md) for the exact lexical rules.
 
@@ -62,6 +62,7 @@ cmake --build build
 ./build/minic --tokens examples/lexer.mc
 ./build/minic --ast examples/hello.mc
 ./build/minic --ast examples/expressions.mc
+./build/minic --ast examples/calls.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -84,6 +85,7 @@ The [lexer example](examples/lexer.mc) includes every token type, with commas in
 Its expected output lives in [tests/lexer.tokens](tests/lexer.tokens).
 The [expression example](examples/expressions.mc) demonstrates precedence, grouping, and assignment without evaluating them.
 Its expected tree lives in [tests/expressions.ast](tests/expressions.ast).
+The [call example](examples/calls.mc) adds parameters, declarations, nested calls, and an empty statement.
 The lexer example requires later parser increments before `--ast` accepts it.
 
 ## Tests
@@ -94,7 +96,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 38 tests cover tokens, source positions, lexical errors, expression trees, syntax errors, and command behavior.
+The 44 tests cover tokens, source positions, lexical errors, AST structure, syntax errors, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 

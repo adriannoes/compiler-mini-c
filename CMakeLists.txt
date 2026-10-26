@@ -28,7 +28,8 @@ if(BUILD_TESTING)
   target_link_libraries(minic_parser_tests PRIVATE minic_frontend)
 
   foreach(case IN ITEMS functions empty precedence operators associativity parentheses
-                        literals positions syntax_errors)
+                        literals positions syntax_errors declarations parameters calls
+                        syntax_only declaration_call_errors)
     add_test(NAME parser.${case} COMMAND minic_parser_tests ${case})
   endforeach()
 
@@ -44,7 +45,7 @@ if(BUILD_TESTING)
   foreach(case IN ITEMS hello help empty keywords missing_file invalid_character
                         unterminated_comment missing_argument language invalid_logical
                         ast_hello ast_expressions ast_empty ast_syntax_error ast_lexical_error
-                        ast_missing_file ast_missing_argument ast_extra_argument)
+                        ast_missing_file ast_missing_argument ast_extra_argument ast_calls)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"

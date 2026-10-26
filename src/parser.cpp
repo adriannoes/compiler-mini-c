@@ -65,18 +65,43 @@ class Parser {
     const auto return_type = type();
     const auto& name = expect(TokenKind::Identifier, "Expected a function name.");
     expect(TokenKind::LeftParen, "Expected \"(\" after function name.");
+    std::vector<Parameter> parameters;
+    if (peek().kind != TokenKind::RightParen) {
+      do {
+        const auto parameter_type = type();
+        const auto& parameter_name = expect(TokenKind::Identifier, "Expected a parameter name.");
+        parameters.push_back({parameter_name.location, parameter_type, parameter_name.lexeme});
+      } while (match({TokenKind::Comma}));
+    }
     expect(TokenKind::RightParen, "Expected \")\" after parameters.");
-    return {name.location, return_type, name.lexeme, block()};
+    return {name.location, return_type, name.lexeme, std::move(parameters), block()};
   }
 
   BlockStmt block() {
     const auto location = expect(TokenKind::LeftBrace, "Expected \"{\" before block.").location;
     BlockStmt result{location, {}};
     while (peek().kind != TokenKind::RightBrace && peek().kind != TokenKind::EndOfFile) {
-      result.statements.push_back(statement());
+      if (peek().kind == TokenKind::KwInt || peek().kind == TokenKind::KwBool ||
+          peek().kind == TokenKind::KwVoid) {
+        result.statements.push_back(declaration());
+      } else {
+        result.statements.push_back(statement());
+      }
     }
     expect(TokenKind::RightBrace, "Expected \"}\" after block.");
     return result;
+  }
+
+  StmtPtr declaration() {
+    const auto declared_type = type();
+    const auto& name = expect(TokenKind::Identifier, "Expected a variable name.");
+    ExprPtr initializer;
+    if (match({TokenKind::Assign})) {
+      initializer = expression();
+    }
+    expect(TokenKind::Semicolon, "Expected \";\" after declaration.");
+    return std::make_unique<Stmt>(Stmt{VarDecl{name.location, declared_type, name.lexeme,
+                                             std::move(initializer)}});
   }
 
   StmtPtr statement() {
@@ -92,7 +117,13 @@ class Parser {
       expect(TokenKind::Semicolon, "Expected \";\" after return value.");
       return std::make_unique<Stmt>(Stmt{ReturnStmt{location, std::move(value)}});
     }
-    fail("Expected a return statement or a block.");
+    if (match({TokenKind::Semicolon})) {
+      return std::make_unique<Stmt>(Stmt{EmptyStmt{previous().location}});
+    }
+    const auto location = peek().location;
+    auto value = expression();
+    expect(TokenKind::Semicolon, "Expected \";\" after expression.");
+    return std::make_unique<Stmt>(Stmt{ExprStmt{location, std::move(value)}});
   }
 
   ExprPtr expression() {
@@ -164,7 +195,18 @@ class Parser {
       return make_expr(previous().location, BooleanExpr{previous().kind == TokenKind::KwTrue});
     }
     if (match({TokenKind::Identifier})) {
-      return make_expr(previous().location, NameExpr{previous().lexeme});
+      const auto& name = previous();
+      if (!match({TokenKind::LeftParen})) {
+        return make_expr(name.location, NameExpr{name.lexeme});
+      }
+      std::vector<ExprPtr> arguments;
+      if (peek().kind != TokenKind::RightParen) {
+        do {
+          arguments.push_back(expression());
+        } while (match({TokenKind::Comma}));
+      }
+      expect(TokenKind::RightParen, "Expected \")\" after arguments.");
+      return make_expr(name.location, CallExpr{name.lexeme, std::move(arguments)});
     }
     if (match({TokenKind::LeftParen})) {
       auto result = expression();

@@ -83,14 +83,16 @@ This design costs allocations and string copies but does not require shared owne
 Adding a node also requires a printer overload, which keeps tree output consistent with the C++ node definitions.
 
 `Program` owns function definitions by value, and each function owns its body block by value.
-Expression variants represent integers, booleans, names, unary operations, binary operations, and assignments.
-Statement variants currently represent blocks and returns.
-The next increments add the remaining nodes from the [approved grammar](language.md#phase-2-grammar).
-Optional return values use a null pointer.
+Expression variants represent integers, booleans, names, unary operations, binary operations, assignments, and named calls.
+Statement variants represent blocks, returns, declarations, expression statements, and empty statements.
+Each function also owns its ordered parameters by value.
+Optional return values and initializers use a null pointer.
+The control-flow increment adds the remaining nodes from the [approved grammar](language.md#phase-2-grammar).
 
 An expression location identifies its literal, name, or operator token.
-A statement location identifies its keyword or opening brace.
-A function location identifies its name, and `TypeSyntax` retains the type keyword position.
+A block or return location identifies its opening brace or keyword.
+An expression statement location identifies its first token, and an empty statement location identifies its semicolon.
+Function, parameter, and declaration locations identify their names, and `TypeSyntax` retains each type keyword position.
 Parentheses affect tree structure without a separate node.
 All positions preserve the lexer's line and byte-column rules.
 
@@ -115,7 +117,7 @@ The existing token command never invokes the parser.
 The printer uses two spaces per level and appends `@line:column` to each positioned node.
 Binary children appear in left-to-right order, and assignment children appear as target then value.
 The command prints no partial tree if lexing or parsing fails.
-Fixtures in `tests/hello.ast` and `tests/expressions.ast` specify the complete expected output.
+Fixtures in `tests/hello.ast`, `tests/expressions.ast`, and `tests/calls.ast` specify the complete expected output.
 
 ## Parser learning note
 
@@ -124,9 +126,12 @@ A lower-precedence method calls a higher-precedence method for its operands.
 For `1 + 2 * 3`, the addition therefore contains a multiplication as its right child.
 Parentheses call the complete expression parser again, which permits a different grouping.
 
-The initial parser accepts only functions without parameters, blocks, returns, and expressions without calls.
-The complete approved grammar also includes declarations, expression statements, parameters, calls, and control flow.
-Phase 2 remains in progress until those increments and their tests are complete.
+Within a block, a type keyword identifies a declaration before statement parsing starts.
+The block stores both declarations and statements through the same C++ variant.
+Only the block parser accepts declarations, which prevents a declaration from becoming a body without braces.
+Parameters require a type and a name, and calls store argument expressions in source order.
+The parser accepts calls without resolving the function or comparing its parameter count.
+Phase 2 remains in progress until control flow and its tests are complete.
 
 ## Planned pipeline
 

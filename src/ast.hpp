@@ -9,6 +9,11 @@
 
 namespace minic {
 
+struct TypeSyntax {
+  TokenKind keyword;
+  SourceLocation location;
+};
+
 struct Expr;
 using ExprPtr = std::unique_ptr<Expr>;
 
@@ -40,10 +45,15 @@ struct AssignmentExpr {
   ExprPtr value;
 };
 
+struct CallExpr {
+  std::string name;
+  std::vector<ExprPtr> arguments;
+};
+
 struct Expr {
   SourceLocation location;
   std::variant<IntegerExpr, BooleanExpr, NameExpr, UnaryExpr, BinaryExpr,
-               AssignmentExpr> node;
+               AssignmentExpr, CallExpr> node;
 };
 
 struct Stmt;
@@ -59,19 +69,37 @@ struct ReturnStmt {
   ExprPtr value;
 };
 
-struct Stmt {
-  std::variant<BlockStmt, ReturnStmt> node;
+struct VarDecl {
+  SourceLocation location;
+  TypeSyntax type;
+  std::string name;
+  ExprPtr initializer;
 };
 
-struct TypeSyntax {
-  TokenKind keyword;
+struct ExprStmt {
   SourceLocation location;
+  ExprPtr expression;
+};
+
+struct EmptyStmt {
+  SourceLocation location;
+};
+
+struct Stmt {
+  std::variant<BlockStmt, ReturnStmt, VarDecl, ExprStmt, EmptyStmt> node;
+};
+
+struct Parameter {
+  SourceLocation location;
+  TypeSyntax type;
+  std::string name;
 };
 
 struct FunctionDecl {
   SourceLocation location;
   TypeSyntax return_type;
   std::string name;
+  std::vector<Parameter> parameters;
   BlockStmt body;
 };
 
