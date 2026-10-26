@@ -85,8 +85,21 @@ struct EmptyStmt {
   SourceLocation location;
 };
 
+struct IfStmt {
+  SourceLocation location;
+  ExprPtr condition;
+  StmtPtr then_branch;
+  StmtPtr else_branch;
+};
+
+struct WhileStmt {
+  SourceLocation location;
+  ExprPtr condition;
+  StmtPtr body;
+};
+
 struct Stmt {
-  std::variant<BlockStmt, ReturnStmt, VarDecl, ExprStmt, EmptyStmt> node;
+  std::variant<BlockStmt, ReturnStmt, VarDecl, ExprStmt, EmptyStmt, IfStmt, WhileStmt> node;
 };
 
 struct Parameter {

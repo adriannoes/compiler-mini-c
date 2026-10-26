@@ -140,6 +140,35 @@ class AstPrinter {
     position(node.location);
   }
 
+  void print(const IfStmt& node, std::size_t depth) {
+    indent(depth);
+    output_ << "If";
+    position(node.location);
+    indent(depth + 1);
+    output_ << "Condition\n";
+    print(*node.condition, depth + 2);
+    indent(depth + 1);
+    output_ << "Then\n";
+    print(*node.then_branch, depth + 2);
+    if (node.else_branch) {
+      indent(depth + 1);
+      output_ << "Else\n";
+      print(*node.else_branch, depth + 2);
+    }
+  }
+
+  void print(const WhileStmt& node, std::size_t depth) {
+    indent(depth);
+    output_ << "While";
+    position(node.location);
+    indent(depth + 1);
+    output_ << "Condition\n";
+    print(*node.condition, depth + 2);
+    indent(depth + 1);
+    output_ << "Body\n";
+    print(*node.body, depth + 2);
+  }
+
   std::ostringstream output_;
 };
 

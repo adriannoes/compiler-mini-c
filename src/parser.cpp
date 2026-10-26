@@ -108,6 +108,27 @@ class Parser {
     if (peek().kind == TokenKind::LeftBrace) {
       return std::make_unique<Stmt>(Stmt{block()});
     }
+    if (match({TokenKind::KwIf})) {
+      const auto location = previous().location;
+      expect(TokenKind::LeftParen, "Expected \"(\" after \"if\".");
+      auto condition = expression();
+      expect(TokenKind::RightParen, "Expected \")\" after condition.");
+      auto then_branch = statement();
+      StmtPtr else_branch;
+      if (match({TokenKind::KwElse})) {
+        else_branch = statement();
+      }
+      return std::make_unique<Stmt>(Stmt{IfStmt{location, std::move(condition),
+                                              std::move(then_branch), std::move(else_branch)}});
+    }
+    if (match({TokenKind::KwWhile})) {
+      const auto location = previous().location;
+      expect(TokenKind::LeftParen, "Expected \"(\" after \"while\".");
+      auto condition = expression();
+      expect(TokenKind::RightParen, "Expected \")\" after condition.");
+      auto body = statement();
+      return std::make_unique<Stmt>(Stmt{WhileStmt{location, std::move(condition), std::move(body)}});
+    }
     if (match({TokenKind::KwReturn})) {
       const auto location = previous().location;
       ExprPtr value;

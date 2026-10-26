@@ -47,9 +47,10 @@ Phase 1 is complete, with 33 token types including `EOF`.
 The parser builds an abstract syntax tree (AST), which records program structure.
 The `--ast` command prints the tree after lexing and parsing succeed.
 The parser supports expressions, functions with parameters, named calls, local declarations, blocks, and return statements.
-The `if`/`else` and `while` statements remain pending within phase 2.
+It also supports `if`/`else` and `while`, including bodies without braces.
+Phase 2 is complete within the [approved grammar](docs/language.md#phase-2-grammar).
 The program does not analyze Mini-C types or execute programs.
-See [docs/language.md](docs/language.md) for the exact lexical rules.
+See [docs/language.md](docs/language.md) for lexical rules, grammar, precedence, and accepted limits.
 
 ## Build and use
 
@@ -63,6 +64,8 @@ cmake --build build
 ./build/minic --ast examples/hello.mc
 ./build/minic --ast examples/expressions.mc
 ./build/minic --ast examples/calls.mc
+./build/minic --ast examples/control_flow.mc
+./build/minic --ast examples/lexer.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -86,7 +89,8 @@ Its expected output lives in [tests/lexer.tokens](tests/lexer.tokens).
 The [expression example](examples/expressions.mc) demonstrates precedence, grouping, and assignment without evaluating them.
 Its expected tree lives in [tests/expressions.ast](tests/expressions.ast).
 The [call example](examples/calls.mc) adds parameters, declarations, nested calls, and an empty statement.
-The lexer example requires later parser increments before `--ast` accepts it.
+The [control-flow example](examples/control_flow.mc) demonstrates the nearest-`if` rule for `else` and a braced loop.
+Every example has an expected AST under `tests/`.
 
 ## Tests
 
@@ -96,9 +100,11 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 44 tests cover tokens, source positions, lexical errors, AST structure, syntax errors, and command behavior.
+The 52 tests cover tokens, source positions, lexical errors, AST structure, syntax errors, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
+All 52 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
 
@@ -122,7 +128,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 |------:|-------|--------|
 | 0 | Project scaffold | done |
 | 1 | Lexer (+ tests) | done |
-| 2 | Recursive-descent parser | in progress |
+| 2 | Recursive-descent parser | done |
 | 3 | Parsing theory (First/Follow, bottom-up) | pending |
 | 4 | Symbol table / scopes | pending |
 | 5 | Type checking | pending |
@@ -135,5 +141,5 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 12 | LLVM literacy | pending |
 | 13 | Wrap-up / portfolio polish | pending |
 
-Phase 2 follows the approved parser scope and remains in progress until all grammar rules pass their tests.
+Phase 2 ends at syntax and AST output. Semantic analysis and execution remain in their later roadmap phases.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

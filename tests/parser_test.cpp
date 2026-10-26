@@ -250,9 +250,102 @@ void calls() {
 
 void syntax_only() {
   const auto program = minic::parse(minic::lex(
-      "void f(void p) { void x; int x; bool y = 1; missing(true, x); return 42; }"));
-  require(program.functions.size() == 1 && program.functions[0].body.statements.size() == 5,
+      "void f(void p) { void x; int x; bool y = 1; missing(true, x); "
+      "if (42) while (true + 1) ; return 42; }"));
+  require(program.functions.size() == 1 && program.functions[0].body.statements.size() == 6,
           "Expected syntax parsing without semantic analysis.");
+}
+
+void conditionals() {
+  const auto program = minic::parse(minic::lex(
+      "int f() {\n  if (a) return 1;\n"
+      "  if (b) { return 2; } else return 3;\n"
+      "  if (c) ; else if (d) return 4; else ;\n}"));
+  const auto& statements = program.functions[0].body.statements;
+  require(statements.size() == 3, "Expected three conditional statements.");
+  const auto& first = std::get<minic::IfStmt>(statements[0]->node);
+  location(first.location, 2, 3);
+  name(*first.condition, "a");
+  integer(*std::get<minic::ReturnStmt>(first.then_branch->node).value, "1");
+  require(!first.else_branch, "Expected an if without an else.");
+  const auto& second = std::get<minic::IfStmt>(statements[1]->node);
+  const auto& block = std::get<minic::BlockStmt>(second.then_branch->node);
+  integer(*std::get<minic::ReturnStmt>(block.statements[0]->node).value, "2");
+  integer(*std::get<minic::ReturnStmt>(second.else_branch->node).value, "3");
+  const auto& third = std::get<minic::IfStmt>(statements[2]->node);
+  require(std::holds_alternative<minic::EmptyStmt>(third.then_branch->node),
+          "Expected an empty then branch.");
+  const auto& nested = std::get<minic::IfStmt>(third.else_branch->node);
+  name(*nested.condition, "d");
+  integer(*std::get<minic::ReturnStmt>(nested.then_branch->node).value, "4");
+  require(std::holds_alternative<minic::EmptyStmt>(nested.else_branch->node),
+          "Expected an empty else branch.");
+}
+
+void dangling_else() {
+  const auto unbraced = minic::parse(minic::lex(
+      "int f() { if (a) if (b) return 1; else return 2; }"));
+  const auto& outer = std::get<minic::IfStmt>(unbraced.functions[0].body.statements[0]->node);
+  const auto& inner = std::get<minic::IfStmt>(outer.then_branch->node);
+  require(!outer.else_branch && inner.else_branch, "Expected else to belong to the nearest if.");
+  integer(*std::get<minic::ReturnStmt>(inner.else_branch->node).value, "2");
+
+  const auto braced = minic::parse(minic::lex(
+      "int f() { if (a) { if (b) return 1; } else return 2; }"));
+  const auto& braced_outer = std::get<minic::IfStmt>(braced.functions[0].body.statements[0]->node);
+  const auto& block = std::get<minic::BlockStmt>(braced_outer.then_branch->node);
+  const auto& braced_inner = std::get<minic::IfStmt>(block.statements[0]->node);
+  require(braced_outer.else_branch && !braced_inner.else_branch,
+          "Expected braces to keep the else on the outer if.");
+  integer(*std::get<minic::ReturnStmt>(braced_outer.else_branch->node).value, "2");
+}
+
+void loops() {
+  const auto program = minic::parse(minic::lex(
+      "int f() {\n  while (a < 2) { a = a + 1; }\n"
+      "  while (b) while (c) ;\n  while (x = 1) return;\n}"));
+  const auto& statements = program.functions[0].body.statements;
+  require(statements.size() == 3, "Expected three loop statements.");
+  const auto& first = std::get<minic::WhileStmt>(statements[0]->node);
+  location(first.location, 2, 3);
+  const auto& comparison = binary(*first.condition, TokenKind::Less);
+  name(*comparison.left, "a");
+  integer(*comparison.right, "2");
+  const auto& block = std::get<minic::BlockStmt>(first.body->node);
+  const auto& assignment = node<minic::AssignmentExpr>(
+      *std::get<minic::ExprStmt>(block.statements[0]->node).expression);
+  name(*assignment.target, "a");
+  const auto& second = std::get<minic::WhileStmt>(statements[1]->node);
+  const auto& inner = std::get<minic::WhileStmt>(second.body->node);
+  name(*second.condition, "b");
+  name(*inner.condition, "c");
+  require(std::holds_alternative<minic::EmptyStmt>(inner.body->node), "Expected an empty loop body.");
+  const auto& third = std::get<minic::WhileStmt>(statements[2]->node);
+  name(*node<minic::AssignmentExpr>(*third.condition).target, "x");
+  require(!std::get<minic::ReturnStmt>(third.body->node).value, "Expected a return without a value.");
+}
+
+void control_flow_errors() {
+  const struct {
+    const char* source;
+    const char* message;
+  } cases[] = {
+      {"int f() { if\ntrue) ; }", "Expected \"(\" after \"if\". Received TRUE."},
+      {"int f() { if (\n) ; }", "Expected an expression. Received RIGHT_PAREN."},
+      {"int f() { if (true\nreturn; }", "Expected \")\" after condition. Received RETURN."},
+      {"int f() { if (true)\n}", "Expected an expression. Received RIGHT_BRACE."},
+      {"int f() {\nelse ; }", "Expected an expression. Received ELSE."},
+      {"int f() { if (true)\nint x; }", "Expected an expression. Received INT."},
+      {"int f() { if (true) ; else\n}", "Expected an expression. Received RIGHT_BRACE."},
+      {"int f() { while\ntrue) ; }", "Expected \"(\" after \"while\". Received TRUE."},
+      {"int f() { while (\n) ; }", "Expected an expression. Received RIGHT_PAREN."},
+      {"int f() { while (true\n; }", "Expected \")\" after condition. Received SEMICOLON."},
+      {"int f() { while (true)\n", "Expected an expression. Received EOF."},
+      {"int f() { while (true)\nbool x; }", "Expected an expression. Received BOOL."},
+  };
+  for (const auto& test : cases) {
+    expect_syntax_error(test.source, {2, 1}, test.message);
+  }
 }
 
 void declaration_call_errors() {
@@ -324,6 +417,8 @@ int main(int argc, char** argv) {
       {"positions", positions}, {"syntax_errors", syntax_errors},
       {"declarations", declarations}, {"parameters", parameters}, {"calls", calls},
       {"syntax_only", syntax_only}, {"declaration_call_errors", declaration_call_errors},
+      {"conditionals", conditionals}, {"dangling_else", dangling_else},
+      {"loops", loops}, {"control_flow_errors", control_flow_errors},
   };
   for (const auto& test : cases) {
     if (std::string_view(argv[1]) == test.name) {

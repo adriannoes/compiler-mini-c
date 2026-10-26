@@ -27,7 +27,8 @@ related:
 
 The command reads a source file and passes its text to `minic::lex`.
 The lexer separates the text into tokens, which are units such as names and numbers.
-The command prints the tokens after the lexer succeeds.
+The `--tokens` command prints the tokens after the lexer succeeds.
+The `--ast` command passes tokens to the parser and prints the complete tree after syntax parsing succeeds.
 
 ```text
 source (.mc) -> minic::lex -> tokens -> --tokens output
@@ -67,7 +68,7 @@ Token recognition establishes boundaries, but later stages determine syntax, ope
 The [lexer example](../examples/lexer.mc) contains every token type.
 The command test compares its entire output with [tests/lexer.tokens](../tests/lexer.tokens).
 Unit tests also cover operators at the end of input, shared prefixes, division, and comments without nesting.
-The lexer phase is complete. The approved parser implementation is in progress.
+The lexer and parser phases are complete within their agreed scopes.
 
 ## Parser and AST
 
@@ -84,13 +85,14 @@ Adding a node also requires a printer overload, which keeps tree output consiste
 
 `Program` owns function definitions by value, and each function owns its body block by value.
 Expression variants represent integers, booleans, names, unary operations, binary operations, assignments, and named calls.
-Statement variants represent blocks, returns, declarations, expression statements, and empty statements.
+Statement variants represent blocks, returns, declarations, expression statements, empty statements, conditionals, and loops.
 Each function also owns its ordered parameters by value.
-Optional return values and initializers use a null pointer.
-The control-flow increment adds the remaining nodes from the [approved grammar](language.md#phase-2-grammar).
+Optional return values, initializers, and else branches use a null pointer.
+All required child pointers are non-null in parser results.
+The complete syntax contract lives in the [approved grammar](language.md#phase-2-grammar).
 
 An expression location identifies its literal, name, or operator token.
-A block or return location identifies its opening brace or keyword.
+A block location identifies its opening brace, and a return, conditional, or loop location identifies its keyword.
 An expression statement location identifies its first token, and an empty statement location identifies its semicolon.
 Function, parameter, and declaration locations identify their names, and `TypeSyntax` retains each type keyword position.
 Parentheses affect tree structure without a separate node.
@@ -117,7 +119,9 @@ The existing token command never invokes the parser.
 The printer uses two spaces per level and appends `@line:column` to each positioned node.
 Binary children appear in left-to-right order, and assignment children appear as target then value.
 The command prints no partial tree if lexing or parsing fails.
-Fixtures in `tests/hello.ast`, `tests/expressions.ast`, and `tests/calls.ast` specify the complete expected output.
+Control-flow labels identify `Condition`, `Then`, `Else`, and `Body` children.
+The `Else` label appears only when an else branch exists.
+Every example has a fixture under `tests/` that specifies its complete expected AST output.
 
 ## Parser learning note
 
@@ -131,7 +135,25 @@ The block stores both declarations and statements through the same C++ variant.
 Only the block parser accepts declarations, which prevents a declaration from becoming a body without braces.
 Parameters require a type and a name, and calls store argument expressions in source order.
 The parser accepts calls without resolving the function or comparing its parameter count.
-Phase 2 remains in progress until control flow and its tests are complete.
+
+An `if` parser call consumes its body through the statement parser before it looks for an `else`.
+An inner `if` therefore consumes its own optional `else` before the outer call continues.
+Braces finish the inner block before the outer `if` searches for its `else`.
+The parser needs no backtracking or separate ambiguity resolution pass.
+The same statement parser accepts nested loops, blocks, returns, and empty bodies.
+
+## Parser validation and limits
+
+Phase 2 includes 18 parser test groups and 23 command tests, plus the original 11 lexer test groups.
+The complete set contains 52 CTest tests.
+Both the normal build and a separate build with AddressSanitizer and UndefinedBehaviorSanitizer pass all 52 tests.
+Both builds use `-Wall -Wextra -Wpedantic` without warnings on Apple Clang 17.
+The commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
+
+The parser stops at the first syntax error and does not attempt recovery.
+Syntax validation accepts undeclared names, invalid Mini-C types, and arbitrary integer text lengths.
+The parser and printer use recursive calls, so deeply nested input depends on the available C++ call stack.
+Execution, name resolution, numeric conversion, and Mini-C type analysis remain outside phase 2.
 
 ## Planned pipeline
 

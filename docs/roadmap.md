@@ -84,12 +84,12 @@ The lexer recognizes all 33 token types in the agreed scope.
 The 21 tests cover keywords, identifier boundaries, operators, comments, source positions, and command behavior.
 The [lexer example](../examples/lexer.mc) contains every token type.
 Its expected command output lives in [tests/lexer.tokens](../tests/lexer.tokens).
-Phase 1 is complete. Phase 2 is in progress.
+Phase 1 is complete.
 See [language.md](language.md) for lexical rules and [architecture.md](architecture.md) for the implementation.
 
 ## Phase 2: Recursive-descent parser
 
-Status: in progress.
+Status: complete.
 
 The approved grammar and operator rules live in [language.md](language.md#phase-2-grammar).
 AST ownership and parser boundaries live in [architecture.md](architecture.md).
@@ -107,16 +107,19 @@ Increment 1 is complete: expressions without calls, functions without parameters
 The [expression example](../examples/expressions.mc) has an expected tree in [tests/expressions.ast](../tests/expressions.ast).
 Increment 2 is complete: parameters, local declarations, calls, expression statements, and empty statements.
 The [call example](../examples/calls.mc) has an expected tree in [tests/calls.ast](../tests/calls.ast).
-The 44 tests include the original 21 lexer and command tests.
-Control flow remains pending.
+Increment 3 is complete: `if`/`else`, `while`, nearest-`if` tests, and expected trees for every example.
+The [control-flow example](../examples/control_flow.mc) demonstrates bodies with and without braces.
+The 52 tests include the original 21 lexer and command tests.
+All 52 tests pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings.
+The build commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
 
 Lookup terms: `context-free grammar`, `CFG`, `derivation`, `parse tree`, `abstract syntax tree`, `AST`, `recursive-descent parsing`, `predictive parsing`, `LL(1)`, `lookahead`, `operator precedence`, `associativity`, `left recursion`, `syntax error recovery`, `panic mode`
 
 - [x] Parse expressions with correct precedence
-- [ ] Parse statements and blocks
+- [x] Parse statements and blocks
 - [x] Build a typed AST in C++
 - [x] AST printer
-- [ ] Parser tests (valid programs + expected syntax errors)
+- [x] Parser tests (valid programs + expected syntax errors)
 
 ## Phase 3: Parsing theory (literacy, little or no production code)
 

@@ -111,7 +111,7 @@ Operators use the longest supported match at the current position.
 For example, `===` produces `EQUAL_EQUAL` and `ASSIGN`.
 Whitespace and comments separate operators, so `=/**/=` produces two `ASSIGN` tokens.
 The source `-42` produces `MINUS` followed by `INTEGER` with text `42`.
-The parser will determine whether `-` means negation or subtraction.
+The parser determines whether `-` means negation or subtraction.
 
 Mini-C has no increment, decrement, or compound assignment operators.
 The lexer reads `++`, `--`, `+=`, and `/=` as pairs of supported tokens.

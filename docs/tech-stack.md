@@ -74,6 +74,26 @@ The C++ tests compare tokens, AST structure, source positions, and lexical or sy
 The command tests compare output, diagnostics, and exit codes.
 CMake enables `-Wall -Wextra -Wpedantic` for Clang and GCC, including test targets.
 
+## Sanitizer validation
+
+AddressSanitizer detects memory access errors, and UndefinedBehaviorSanitizer detects selected undefined C++ operations.
+Both use compiler instrumentation and add no project dependency.
+From the repository root, create a separate Debug build with Clang:
+
+```bash
+cmake -S . -B build-parser-sanitize \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' \
+  -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+cmake --build build-parser-sanitize
+ASAN_OPTIONS=halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 \
+  ctest --test-dir build-parser-sanitize --output-on-failure
+```
+
+The phase 2 validation passes all 52 tests in both normal and sanitizer builds on Apple Clang 17.
+Both builds compile without warnings.
+Build directories remain outside version control.
+
 ## Conventions
 
 - English only: docs, comments, commit messages, user-facing diagnostics
