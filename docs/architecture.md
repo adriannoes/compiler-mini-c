@@ -42,6 +42,11 @@ It reads a complete identifier before keyword classification and consumes all ad
 Comments and whitespace update the source position without producing tokens.
 These rules teach token boundaries, keyword recognition, and position tracking.
 
+The scanner reads at most one extra byte to distinguish operators with a common prefix.
+It chooses `==` before `=`, for example.
+The scanner handles `//` and `/*` comments before it emits `/` as division.
+This keeps the implementation in the existing scanner and adds no dependencies.
+
 The lexer throws `LexError` at the first unsupported character or unterminated block comment.
 The command adds the file path and prints the diagnostic to standard error.
 The command emits no partial token list on failure.
@@ -50,6 +55,18 @@ The `minic_frontend` CMake library contains the lexer and token definitions.
 Both `minic` and the unit tests link to that library.
 CTest also runs command tests against the built executable.
 See [tech-stack.md](tech-stack.md) for build and test commands and [language.md](language.md) for lexical rules.
+
+## Lexer learning note
+
+Maximal munch means choosing the longest supported token at each position.
+For `===`, the scanner emits `EQUAL_EQUAL` and then `ASSIGN`.
+For `=/**/=`, the comment separates two `ASSIGN` tokens.
+Token recognition establishes boundaries, but later stages determine syntax, operator precedence, and types.
+
+The [lexer example](../examples/lexer.mc) contains every token type.
+The command test compares its entire output with [tests/lexer.tokens](../tests/lexer.tokens).
+Unit tests also cover operators at the end of input, shared prefixes, division, and comments without nesting.
+The lexer phase is complete. Parser implementation requires separate approval.
 
 ## Planned pipeline
 

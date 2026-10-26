@@ -38,11 +38,12 @@ Phase checklists and study terms live in [docs/roadmap.md](docs/roadmap.md) and 
 
 The lexer converts source text into tokens, which are units such as keywords, names, and numbers.
 The `--tokens` command prints each token with its original text, line, and column.
-The command reads `examples/hello.mc`, skips comments, and reports lexical errors.
+The command reads a source file, skips comments, and reports lexical errors.
 
 The lexer recognizes `int`, `bool`, `void`, `if`, `else`, `while`, `return`, `true`, and `false`.
-It also recognizes identifiers, decimal integers, `(`, `)`, `{`, `}`, and `;`.
-Operators and the comma are pending.
+It also recognizes identifiers, decimal integers, punctuation, and all operators in the phase 1 scope.
+The lexer chooses the longest supported operator and distinguishes division from comments.
+Phase 1 is complete, with 33 token types including `EOF`.
 The program does not yet check syntax, check types, or execute Mini-C programs.
 See [docs/language.md](docs/language.md) for the exact lexical rules.
 
@@ -54,6 +55,7 @@ From the repository root, configure and build with CMake 3.20 or later and a C++
 cmake -S . -B build
 cmake --build build
 ./build/minic --tokens examples/hello.mc
+./build/minic --tokens examples/lexer.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -72,6 +74,8 @@ The token output includes the source position and ends with `EOF`:
 ```
 
 Use `./build/minic --help` to see the available commands.
+The [lexer example](examples/lexer.mc) includes every token type, with commas in parameters and calls.
+Its expected output lives in [tests/lexer.tokens](tests/lexer.tokens).
 
 ## Tests
 
@@ -81,7 +85,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 16 tests cover token types, text, positions, comments, lexical errors, and command behavior.
+The 21 tests cover token types, text, positions, comments, lexical errors, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 
@@ -106,7 +110,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | Phase | Topic | Status |
 |------:|-------|--------|
 | 0 | Project scaffold | done |
-| 1 | Lexer (+ tests) | in progress |
+| 1 | Lexer (+ tests) | done |
 | 2 | Recursive-descent parser | pending |
 | 3 | Parsing theory (First/Follow, bottom-up) | pending |
 | 4 | Symbol table / scopes | pending |
@@ -120,5 +124,5 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 12 | LLVM literacy | pending |
 | 13 | Wrap-up / portfolio polish | pending |
 
-Next: complete phase 1 with operators and the comma.
+The next implementation phase is the parser, which requires separate approval.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

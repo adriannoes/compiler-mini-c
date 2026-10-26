@@ -22,12 +22,13 @@ if(BUILD_TESTING)
   target_link_libraries(minic_lexer_tests PRIVATE minic_frontend)
 
   foreach(case IN ITEMS hello empty keywords identifiers integers positions_and_comments
+                        operators operator_boundaries division_and_comments
                         invalid_character unterminated_comment)
     add_test(NAME lexer.${case} COMMAND minic_lexer_tests ${case})
   endforeach()
 
   foreach(case IN ITEMS hello help empty keywords missing_file invalid_character
-                        unterminated_comment missing_argument)
+                        unterminated_comment missing_argument language invalid_logical)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"

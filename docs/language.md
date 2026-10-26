@@ -90,6 +90,12 @@ The lexer recognizes the following tokens:
 | `LEFT_PAREN`, `RIGHT_PAREN` | `(`, `)` |
 | `LEFT_BRACE`, `RIGHT_BRACE` | `{`, `}` |
 | `SEMICOLON` | `;` |
+| `COMMA` | `,` |
+| `ASSIGN` | `=` |
+| `PLUS`, `MINUS`, `STAR`, `SLASH`, `PERCENT` | `+`, `-`, `*`, `/`, `%` |
+| `EQUAL_EQUAL`, `BANG_EQUAL` | `==`, `!=` |
+| `LESS`, `LESS_EQUAL`, `GREATER`, `GREATER_EQUAL` | `<`, `<=`, `>`, `>=` |
+| `BANG`, `AND_AND`, `OR_OR` | `!`, `&&`, `\|\|` |
 | `EOF` | Empty text at the end of the input |
 
 Identifiers use ASCII letters, digits, and underscores. An identifier cannot start with a digit.
@@ -101,10 +107,22 @@ Leading zeroes do not select another base.
 The lexer does not convert numbers or enforce numeric limits.
 Numeric limits belong to a later stage.
 
+Operators use the longest supported match at the current position.
+For example, `===` produces `EQUAL_EQUAL` and `ASSIGN`.
+Whitespace and comments separate operators, so `=/**/=` produces two `ASSIGN` tokens.
+The source `-42` produces `MINUS` followed by `INTEGER` with text `42`.
+The parser will determine whether `-` means negation or subtraction.
+
+Mini-C has no increment, decrement, or compound assignment operators.
+The lexer reads `++`, `--`, `+=`, and `/=` as pairs of supported tokens.
+Token recognition does not establish that a sequence is valid syntax.
+The characters `&` and `|` alone are lexical errors.
+
 The lexer skips spaces, tabs, vertical tabs, form feeds, and line endings.
 A `//` comment ends at a line ending or the end of the input.
 A `/* ... */` comment ends at the first `*/`. Block comments do not nest.
 Comments separate tokens, so `int/* note */return` produces two keyword tokens.
+A `/` that does not start a comment produces a `SLASH` token.
 
 Line and column numbers start at 1.
 Columns count bytes, and a tab advances one column.
@@ -135,8 +153,8 @@ The following language scope grows phase by phase (see [roadmap.md](roadmap.md))
 - Expressions: arithmetic, comparisons, logical ops, calls
 - Functions with parameters
 
-The lexer recognizes all nine keywords.
-The operators and comma in the phase 1 agreement remain pending.
+Phase 1 covers all nine keywords, fifteen operators, and the comma.
+The lexer recognizes 33 token types, including identifiers, integers, punctuation, and `EOF`.
 The lexer recognizes token boundaries but does not check statement structure or types.
 
 ## Out of scope (start)

@@ -134,6 +134,107 @@ void integers() {
   }
 }
 
+void operators() {
+  const struct {
+    std::string_view text;
+    TokenKind kind;
+  } cases[] = {
+      {"=", TokenKind::Assign},
+      {"+", TokenKind::Plus},
+      {"-", TokenKind::Minus},
+      {"*", TokenKind::Star},
+      {"/", TokenKind::Slash},
+      {"%", TokenKind::Percent},
+      {"==", TokenKind::EqualEqual},
+      {"!=", TokenKind::BangEqual},
+      {"<", TokenKind::Less},
+      {"<=", TokenKind::LessEqual},
+      {">", TokenKind::Greater},
+      {">=", TokenKind::GreaterEqual},
+      {"!", TokenKind::Bang},
+      {"&&", TokenKind::AndAnd},
+      {"||", TokenKind::OrOr},
+      {",", TokenKind::Comma},
+  };
+
+  for (const auto& test : cases) {
+    expect_tokens(test.text, {
+        {test.kind, std::string(test.text), {1, 1}},
+        {TokenKind::EndOfFile, "", {1, test.text.size() + 1}},
+    });
+  }
+}
+
+void operator_boundaries() {
+  expect_tokens("=== !== <== >== &&! ||!", {
+      {TokenKind::EqualEqual, "==", {1, 1}},
+      {TokenKind::Assign, "=", {1, 3}},
+      {TokenKind::BangEqual, "!=", {1, 5}},
+      {TokenKind::Assign, "=", {1, 7}},
+      {TokenKind::LessEqual, "<=", {1, 9}},
+      {TokenKind::Assign, "=", {1, 11}},
+      {TokenKind::GreaterEqual, ">=", {1, 13}},
+      {TokenKind::Assign, "=", {1, 15}},
+      {TokenKind::AndAnd, "&&", {1, 17}},
+      {TokenKind::Bang, "!", {1, 19}},
+      {TokenKind::OrOr, "||", {1, 21}},
+      {TokenKind::Bang, "!", {1, 23}},
+      {TokenKind::EndOfFile, "", {1, 24}},
+  });
+  expect_tokens("-42,a-b+2*3%4", {
+      {TokenKind::Minus, "-", {1, 1}},
+      {TokenKind::Integer, "42", {1, 2}},
+      {TokenKind::Comma, ",", {1, 4}},
+      {TokenKind::Identifier, "a", {1, 5}},
+      {TokenKind::Minus, "-", {1, 6}},
+      {TokenKind::Identifier, "b", {1, 7}},
+      {TokenKind::Plus, "+", {1, 8}},
+      {TokenKind::Integer, "2", {1, 9}},
+      {TokenKind::Star, "*", {1, 10}},
+      {TokenKind::Integer, "3", {1, 11}},
+      {TokenKind::Percent, "%", {1, 12}},
+      {TokenKind::Integer, "4", {1, 13}},
+      {TokenKind::EndOfFile, "", {1, 14}},
+  });
+  expect_tokens("++--+=/=", {
+      {TokenKind::Plus, "+", {1, 1}},
+      {TokenKind::Plus, "+", {1, 2}},
+      {TokenKind::Minus, "-", {1, 3}},
+      {TokenKind::Minus, "-", {1, 4}},
+      {TokenKind::Plus, "+", {1, 5}},
+      {TokenKind::Assign, "=", {1, 6}},
+      {TokenKind::Slash, "/", {1, 7}},
+      {TokenKind::Assign, "=", {1, 8}},
+      {TokenKind::EndOfFile, "", {1, 9}},
+  });
+}
+
+void division_and_comments() {
+  expect_tokens("8/2// line\r\n/ /* block\rcomment */ /", {
+      {TokenKind::Integer, "8", {1, 1}},
+      {TokenKind::Slash, "/", {1, 2}},
+      {TokenKind::Integer, "2", {1, 3}},
+      {TokenKind::Slash, "/", {2, 1}},
+      {TokenKind::Slash, "/", {3, 12}},
+      {TokenKind::EndOfFile, "", {3, 13}},
+  });
+  expect_tokens("8/**//2", {
+      {TokenKind::Integer, "8", {1, 1}},
+      {TokenKind::Slash, "/", {1, 6}},
+      {TokenKind::Integer, "2", {1, 7}},
+      {TokenKind::EndOfFile, "", {1, 8}},
+  });
+  expect_tokens("/* /* */ /", {
+      {TokenKind::Slash, "/", {1, 10}},
+      {TokenKind::EndOfFile, "", {1, 11}},
+  });
+  expect_tokens("=/**/=", {
+      {TokenKind::Assign, "=", {1, 1}},
+      {TokenKind::Assign, "=", {1, 6}},
+      {TokenKind::EndOfFile, "", {1, 7}},
+  });
+}
+
 void positions_and_comments() {
   expect_tokens("// first\r\n\tint/* block\ncomment */\r\n  main // last", {
       {TokenKind::KwInt, "int", {2, 2}},
@@ -154,7 +255,10 @@ void positions_and_comments() {
 
 void invalid_character() {
   expect_error("int @", {1, 5}, "Unexpected character \"@\".");
-  expect_error("/", {1, 1}, "Unexpected character \"/\".");
+  expect_error("&", {1, 1}, "Unexpected character \"&\".");
+  expect_error("|", {1, 1}, "Unexpected character \"|\".");
+  expect_error("true && false\n  &", {2, 3}, "Unexpected character \"&\".");
+  expect_error("true || false | true", {1, 15}, "Unexpected character \"|\".");
   expect_error(std::string_view("int\0return", 10), {1, 4}, "Unexpected byte 0x00.");
 }
 
@@ -181,6 +285,9 @@ int main(int argc, char** argv) {
       {"keywords", keywords},
       {"identifiers", identifiers},
       {"integers", integers},
+      {"operators", operators},
+      {"operator_boundaries", operator_boundaries},
+      {"division_and_comments", division_and_comments},
       {"positions_and_comments", positions_and_comments},
       {"invalid_character", invalid_character},
       {"unterminated_comment", unterminated_comment},

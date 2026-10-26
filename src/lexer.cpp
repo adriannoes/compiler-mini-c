@@ -73,6 +73,14 @@ class Scanner {
     return ch;
   }
 
+  bool match(char expected) {
+    if (peek() != expected) {
+      return false;
+    }
+    advance();
+    return true;
+  }
+
   void skip_whitespace_and_comments() {
     while (!at_end()) {
       if (is_whitespace(peek())) {
@@ -143,6 +151,28 @@ class Scanner {
         case '{': kind = TokenKind::LeftBrace; break;
         case '}': kind = TokenKind::RightBrace; break;
         case ';': kind = TokenKind::Semicolon; break;
+        case ',': kind = TokenKind::Comma; break;
+        case '+': kind = TokenKind::Plus; break;
+        case '-': kind = TokenKind::Minus; break;
+        case '*': kind = TokenKind::Star; break;
+        case '/': kind = TokenKind::Slash; break;
+        case '%': kind = TokenKind::Percent; break;
+        case '=': kind = match('=') ? TokenKind::EqualEqual : TokenKind::Assign; break;
+        case '!': kind = match('=') ? TokenKind::BangEqual : TokenKind::Bang; break;
+        case '<': kind = match('=') ? TokenKind::LessEqual : TokenKind::Less; break;
+        case '>': kind = match('=') ? TokenKind::GreaterEqual : TokenKind::Greater; break;
+        case '&':
+          if (!match('&')) {
+            throw LexError(location, unexpected_character(ch));
+          }
+          kind = TokenKind::AndAnd;
+          break;
+        case '|':
+          if (!match('|')) {
+            throw LexError(location, unexpected_character(ch));
+          }
+          kind = TokenKind::OrOr;
+          break;
         default: throw LexError(location, unexpected_character(ch));
       }
     }

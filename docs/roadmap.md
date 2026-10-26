@@ -56,6 +56,8 @@ Lookup terms: `compiler architecture`, `front end`, `back end`, `middle end`, `p
 
 ## Phase 1: Lexer
 
+Status: complete.
+
 Lookup terms: `lexical analysis`, `scanner`, `token`, `lexeme`, `regular expression`, `finite automaton`, `DFA`, `NFA`, `maximal munch`, `keyword`, `identifier`, `source location`
 
 - [x] Token types and `SourceLocation` (line/column)
@@ -64,12 +66,13 @@ Lookup terms: `lexical analysis`, `scanner`, `token`, `lexeme`, `regular express
 - [x] Extend unit and command tests for keywords and identifier boundaries
 - [x] Token dump mode for debugging
 - [x] Unit tests and command tests for valid and invalid input
-- [ ] Scan the approved operators and comma
-- [ ] Extend tests and examples for operators and the comma
+- [x] Scan the approved operators and comma
+- [x] Extend tests and examples for operators and the comma
+- [x] Record a lexer learning note in [architecture.md](architecture.md#lexer-learning-note)
 
 The approved scope adds seven keywords, fifteen operators, and a comma.
 The exact token list and limits live in [language.md](language.md#phase-1-scope).
-Delivery uses two local commits, with a build, tests, and prose review before each commit.
+The completion work uses two local commits, with a build, tests, and prose review before each commit.
 The first commit adds the keywords, keyword boundary tests, and documentation.
 The second commit adds operators and the comma, regression tests, and an example with expected command output.
 
@@ -78,8 +81,11 @@ Do not start the parser without separate approval after phase 1 is complete.
 
 The first increment reads `examples/hello.mc` and reports token types, text, and positions.
 The lexer reports unsupported characters and unterminated block comments.
-The lexer recognizes all nine keywords, with tests for exact matches, identifier boundaries, and case sensitivity.
-Phase 1 remains in progress until the operators, comma, and tests are complete.
+The lexer recognizes all 33 token types in the agreed scope.
+The 21 tests cover keywords, identifier boundaries, operators, comments, source positions, and command behavior.
+The [lexer example](../examples/lexer.mc) contains every token type.
+Its expected command output lives in [tests/lexer.tokens](../tests/lexer.tokens).
+Phase 1 is complete. Phase 2 remains pending.
 See [language.md](language.md) for lexical rules and [architecture.md](architecture.md) for the implementation.
 
 ## Phase 2: Recursive-descent parser
