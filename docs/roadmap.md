@@ -123,15 +123,27 @@ Lookup terms: `context-free grammar`, `CFG`, `derivation`, `parse tree`, `abstra
 
 ## Phase 3: Parsing theory (literacy, little or no production code)
 
+Status: complete (study notes).
+
 Notes: [theory-parsing.md](theory-parsing.md).
+
+The notes calculate FIRST/FOLLOW sets and a predictive table for a small expression grammar.
+They distinguish that grammar's LL(1) property from the complete statement grammar's explicit nearest-`if` rule.
+A worked shift/reduce trace connects bottom-up parsing to the same expression grouping as the implemented parser.
+The notes also compare LR(0), SLR, LALR, and canonical LR(1), with generator trade-offs and an interview summary.
+
+The calculations include five set rows, 30 predictive cells, and 14 trace steps.
+An independent calculation reproduces the sets, table decisions, optional-`else` conflict, and reverse rightmost derivation.
+The documented AST example matches the existing command's complete output.
+This phase adds documentation only, with no compiler behavior change or new dependency.
 
 Lookup terms: `FIRST set`, `FOLLOW set`, `LL(1) grammar`, `left factoring`, `shift-reduce parsing`, `LR(0)`, `SLR`, `LALR`, `LR(1)`, `LR item`, `handle`, `shift/reduce conflict`, `reduce/reduce conflict`, `parser generator`
 
-- [ ] Work First/Follow examples by hand on a tiny grammar
-- [ ] Explain LL(1) conflicts vs what recursive descent handles
-- [ ] Summarize shift-reduce / LR family (LR(0), SLR, LALR, LR(1)) at conversation level
-- [ ] Note when you would reach for Bison/ANTLR vs a hand-written parser
-- [ ] Do not implement a bottom-up parser in this project (by design)
+- [x] Work First/Follow examples by hand on a tiny grammar
+- [x] Explain LL(1) conflicts vs what recursive descent handles
+- [x] Summarize shift-reduce / LR family (LR(0), SLR, LALR, LR(1)) at conversation level
+- [x] Note when you would reach for Bison/ANTLR vs a hand-written parser
+- [x] Do not implement a bottom-up parser in this project (by design)
 
 ## Phase 4: Symbol table and scopes
 

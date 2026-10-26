@@ -52,6 +52,9 @@ Phase 2 is complete within the [approved grammar](docs/language.md#phase-2-gramm
 The program does not analyze Mini-C types or execute programs.
 See [docs/language.md](docs/language.md) for lexical rules, grammar, precedence, and accepted limits.
 
+Phase 3 study notes include worked FIRST/FOLLOW sets, LL(1) decisions, and a shift/reduce trace.
+They compare LR constructions and parser-generator choices in [docs/theory-parsing.md](docs/theory-parsing.md).
+
 ## Build and use
 
 From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
@@ -129,7 +132,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 0 | Project scaffold | done |
 | 1 | Lexer (+ tests) | done |
 | 2 | Recursive-descent parser | done |
-| 3 | Parsing theory (First/Follow, bottom-up) | pending |
+| 3 | Parsing theory (First/Follow, bottom-up) | done |
 | 4 | Symbol table / scopes | pending |
 | 5 | Type checking | pending |
 | 6 | Tree-walk interpreter (stage A) | pending |
@@ -141,5 +144,6 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 12 | LLVM literacy | pending |
 | 13 | Wrap-up / portfolio polish | pending |
 
-Phase 2 ends at syntax and AST output. Semantic analysis and execution remain in their later roadmap phases.
+Phase 2 delivers syntax and AST output, and phase 3 records the related theory.
+Semantic analysis and execution remain in their later roadmap phases.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.
