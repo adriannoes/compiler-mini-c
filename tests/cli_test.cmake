@@ -11,6 +11,17 @@ elseif(CASE STREQUAL "help")
 elseif(CASE STREQUAL "empty")
   file(WRITE "${input}" "")
   set(expected_output "1:1 EOF \"\"\n")
+elseif(CASE STREQUAL "keywords")
+  file(WRITE "${input}" "bool void if else while true false")
+  set(expected_output [=[1:1 BOOL "bool"
+1:6 VOID "void"
+1:11 IF "if"
+1:14 ELSE "else"
+1:19 WHILE "while"
+1:25 TRUE "true"
+1:30 FALSE "false"
+1:35 EOF ""
+]=])
 elseif(CASE STREQUAL "missing_file")
   file(REMOVE "${input}")
   set(expected_exit 1)

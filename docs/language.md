@@ -44,6 +44,32 @@ Mini-C is a C subset chosen to stay close to a typical college compilers course.
 
 Specialist compiler engineering is outside the project scope.
 
+## Phase 1 scope
+
+The phase 1 agreement adds exactly 23 token types to the first lexer increment.
+The following table records the complete addition:
+
+| Category | Source text | Token types |
+|----------|-------------|-------------|
+| Keywords | `bool`, `void`, `if`, `else`, `while`, `true`, `false` | `BOOL`, `VOID`, `IF`, `ELSE`, `WHILE`, `TRUE`, `FALSE` |
+| Assignment | `=` | `ASSIGN` |
+| Arithmetic | `+`, `-`, `*`, `/`, `%` | `PLUS`, `MINUS`, `STAR`, `SLASH`, `PERCENT` |
+| Comparisons | `==`, `!=`, `<`, `<=`, `>`, `>=` | `EQUAL_EQUAL`, `BANG_EQUAL`, `LESS`, `LESS_EQUAL`, `GREATER`, `GREATER_EQUAL` |
+| Logic | `!`, `&&`, `\|\|` | `BANG`, `AND_AND`, `OR_OR` |
+| Separator | `,` | `COMMA` |
+
+The lexer must choose the longest supported operator at each position.
+It must distinguish division from line and block comments.
+The source `-42` must produce `MINUS` and `INTEGER` tokens.
+The source `++` must produce two `PLUS` tokens because Mini-C has no increment operator.
+The characters `&` and `|` alone must remain lexical errors.
+
+This phase preserves token text ownership, source positions, comment rules, diagnostics, and command exit codes.
+It excludes strings, floating-point numbers, arrays, pointers, preprocessing, bitwise operators, compound assignment, and increment or decrement operators.
+Syntax and type analysis belong to later phases.
+Parser implementation requires separate approval after phase 1 is complete.
+Delivery progress lives in [roadmap.md](roadmap.md).
+
 ## Implemented lexical rules
 
 A token is a source unit with a type, text, and position.
@@ -52,7 +78,13 @@ The lexer recognizes the following tokens:
 | Token type | Source text |
 |------------|-------------|
 | `INT` | `int` |
+| `BOOL` | `bool` |
+| `VOID` | `void` |
+| `IF` | `if` |
+| `ELSE` | `else` |
+| `WHILE` | `while` |
 | `RETURN` | `return` |
+| `TRUE`, `FALSE` | `true`, `false` |
 | `IDENTIFIER` | `[A-Za-z_][A-Za-z0-9_]*` |
 | `INTEGER` | `[0-9]+` |
 | `LEFT_PAREN`, `RIGHT_PAREN` | `(`, `)` |
@@ -61,8 +93,8 @@ The lexer recognizes the following tokens:
 | `EOF` | Empty text at the end of the input |
 
 Identifiers use ASCII letters, digits, and underscores. An identifier cannot start with a digit.
-Names are case sensitive. The lexer reads the complete identifier before it compares the text with `int` and `return`.
-For example, `integer`, `int2`, and `Return` are identifiers.
+Names are case sensitive. The lexer reads the complete identifier before keyword classification.
+For example, `integer`, `int2`, `boolean`, `if2`, `Return`, and `True` are identifiers.
 
 Integer tokens preserve all decimal digits as text.
 Leading zeroes do not select another base.
@@ -103,8 +135,8 @@ The following language scope grows phase by phase (see [roadmap.md](roadmap.md))
 - Expressions: arithmetic, comparisons, logical ops, calls
 - Functions with parameters
 
-Operators and keywords other than `int` and `return` remain pending in phase 1.
-Until that work is complete, names such as `bool` and `if` are identifiers.
+The lexer recognizes all nine keywords.
+The operators and comma in the phase 1 agreement remain pending.
 The lexer recognizes token boundaries but does not check statement structure or types.
 
 ## Out of scope (start)

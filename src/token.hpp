@@ -12,7 +12,14 @@ struct SourceLocation {
 
 enum class TokenKind {
   KwInt,
+  KwBool,
+  KwVoid,
+  KwIf,
+  KwElse,
+  KwWhile,
   KwReturn,
+  KwTrue,
+  KwFalse,
   Identifier,
   Integer,
   LeftParen,

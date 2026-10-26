@@ -40,8 +40,9 @@ The lexer converts source text into tokens, which are units such as keywords, na
 The `--tokens` command prints each token with its original text, line, and column.
 The command reads `examples/hello.mc`, skips comments, and reports lexical errors.
 
-The implemented subset includes `int`, `return`, identifiers, decimal integers, `(`, `)`, `{`, `}`, and `;`.
-Operators and the remaining keywords are pending.
+The lexer recognizes `int`, `bool`, `void`, `if`, `else`, `while`, `return`, `true`, and `false`.
+It also recognizes identifiers, decimal integers, `(`, `)`, `{`, `}`, and `;`.
+Operators and the comma are pending.
 The program does not yet check syntax, check types, or execute Mini-C programs.
 See [docs/language.md](docs/language.md) for the exact lexical rules.
 
@@ -80,7 +81,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 14 tests cover token types, text, positions, comments, lexical errors, and command behavior.
+The 16 tests cover token types, text, positions, comments, lexical errors, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 
@@ -119,5 +120,5 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 12 | LLVM literacy | pending |
 | 13 | Wrap-up / portfolio polish | pending |
 
-Next: complete phase 1 with operators and the remaining keywords.
+Next: complete phase 1 with operators and the comma.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

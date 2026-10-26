@@ -78,6 +78,19 @@ void empty() {
   expect_tokens(" \t\n", {{TokenKind::EndOfFile, "", {2, 1}}});
 }
 
+void keywords() {
+  expect_tokens("bool void if else while true false", {
+      {TokenKind::KwBool, "bool", {1, 1}},
+      {TokenKind::KwVoid, "void", {1, 6}},
+      {TokenKind::KwIf, "if", {1, 11}},
+      {TokenKind::KwElse, "else", {1, 14}},
+      {TokenKind::KwWhile, "while", {1, 19}},
+      {TokenKind::KwTrue, "true", {1, 25}},
+      {TokenKind::KwFalse, "false", {1, 30}},
+      {TokenKind::EndOfFile, "", {1, 35}},
+  });
+}
+
 void identifiers() {
   const struct {
     std::string_view text;
@@ -91,6 +104,17 @@ void identifiers() {
       {"return_value", TokenKind::Identifier},
       {"Int", TokenKind::Identifier},
       {"Return", TokenKind::Identifier},
+      {"boolean", TokenKind::Identifier},
+      {"bool2", TokenKind::Identifier},
+      {"_bool", TokenKind::Identifier},
+      {"Bool", TokenKind::Identifier},
+      {"voided", TokenKind::Identifier},
+      {"if2", TokenKind::Identifier},
+      {"elseif", TokenKind::Identifier},
+      {"while_loop", TokenKind::Identifier},
+      {"true_value", TokenKind::Identifier},
+      {"falsehood", TokenKind::Identifier},
+      {"TRUE", TokenKind::Identifier},
   };
 
   for (const auto& test : cases) {
@@ -154,6 +178,7 @@ int main(int argc, char** argv) {
   } cases[] = {
       {"hello", hello},
       {"empty", empty},
+      {"keywords", keywords},
       {"identifiers", identifiers},
       {"integers", integers},
       {"positions_and_comments", positions_and_comments},

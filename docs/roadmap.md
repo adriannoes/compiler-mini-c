@@ -60,14 +60,26 @@ Lookup terms: `lexical analysis`, `scanner`, `token`, `lexeme`, `regular express
 
 - [x] Token types and `SourceLocation` (line/column)
 - [x] Scan `int`, `return`, identifiers, decimal integers, punctuation, and comments
+- [x] Scan `bool`, `void`, `if`, `else`, `while`, `true`, and `false`
+- [x] Extend unit and command tests for keywords and identifier boundaries
 - [x] Token dump mode for debugging
 - [x] Unit tests and command tests for valid and invalid input
-- [ ] Scan operators and the remaining language keywords
-- [ ] Extend tests for operators and the remaining keywords
+- [ ] Scan the approved operators and comma
+- [ ] Extend tests and examples for operators and the comma
+
+The approved scope adds seven keywords, fifteen operators, and a comma.
+The exact token list and limits live in [language.md](language.md#phase-1-scope).
+Delivery uses two local commits, with a build, tests, and prose review before each commit.
+The first commit adds the keywords, keyword boundary tests, and documentation.
+The second commit adds operators and the comma, regression tests, and an example with expected command output.
+
+Phase 1 is the implementation boundary for this work.
+Do not start the parser without separate approval after phase 1 is complete.
 
 The first increment reads `examples/hello.mc` and reports token types, text, and positions.
 The lexer reports unsupported characters and unterminated block comments.
-Phase 1 remains in progress until the remaining tokens and tests are complete.
+The lexer recognizes all nine keywords, with tests for exact matches, identifier boundaries, and case sensitivity.
+Phase 1 remains in progress until the operators, comma, and tests are complete.
 See [language.md](language.md) for lexical rules and [architecture.md](architecture.md) for the implementation.
 
 ## Phase 2: Recursive-descent parser

@@ -112,8 +112,22 @@ class Scanner {
       const std::string_view text = source_.substr(start, offset_ - start);
       if (text == "int") {
         kind = TokenKind::KwInt;
+      } else if (text == "bool") {
+        kind = TokenKind::KwBool;
+      } else if (text == "void") {
+        kind = TokenKind::KwVoid;
+      } else if (text == "if") {
+        kind = TokenKind::KwIf;
+      } else if (text == "else") {
+        kind = TokenKind::KwElse;
+      } else if (text == "while") {
+        kind = TokenKind::KwWhile;
       } else if (text == "return") {
         kind = TokenKind::KwReturn;
+      } else if (text == "true") {
+        kind = TokenKind::KwTrue;
+      } else if (text == "false") {
+        kind = TokenKind::KwFalse;
       } else {
         kind = TokenKind::Identifier;
       }
