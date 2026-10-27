@@ -284,11 +284,26 @@ Lookup terms: `activation record`, `stack frame`, `calling convention`, `paramet
 
 ## Phase 8: Bytecode compiler
 
+Status: in progress.
+
+The approved rules live in [language.md](language.md#phase-8-bytecode-rules).
+The instruction contract lives in [architecture.md](architecture.md#bytecode-format-and-compilation).
+Delivery uses three local increments:
+
+1. Owned bytecode records, the stack instruction set, deterministic printing, and format tests.
+2. Complete AST compilation with static analysis, lexical slots, jumps, calls, and source step markers.
+3. The `--bytecode` command, example fixtures, documentation, and normal and sanitizer validation.
+
+Increment 1 provides the format and printer in `minic_bytecode`, with three test groups.
+The bytecode owns its strings and stores source positions by value.
+The instruction contract defines stack effects without implementing a VM.
+Compilation and command integration remain pending.
+
 Lookup terms: `intermediate representation`, `IR`, `three-address code`, `bytecode`, `instruction set`, `constant pool`, `jump`, `branch`, `label`, `disassembler`, `code generation`
 
-- [ ] Define a small instruction set
+- [x] Define a small instruction set
 - [ ] Compile AST → bytecode chunk
-- [ ] Disassembler for debugging
+- [x] Disassembler for debugging
 - [ ] Tests that compilation succeeds for fixture programs
 
 ## Phase 9: VM (stage B, primary target)

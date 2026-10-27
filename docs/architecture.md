@@ -409,6 +409,55 @@ Function evaluation still uses the C++ call stack, and a larger configured call-
 Parsing, static analysis, and deeply nested AST evaluation also retain their existing native-stack limits.
 The default call-depth limit passes the recursive error cases under both sanitizers.
 
+## Bytecode format and compilation
+
+Bytecode is an instruction sequence for the planned stack VM.
+The `minic_bytecode` library owns its format and deterministic printer independently of the interpreter.
+The first phase 8 increment provides `BytecodeProgram`, its records, and `print_bytecode`.
+Compilation and command integration follow in the remaining increments.
+
+`BytecodeProgram` owns functions in source order.
+Each function owns its name, return type, source position, local metadata, constants, and instruction vector.
+The first local slots hold parameters in declaration order. Later slots identify distinct local declarations, including shadowed names.
+Each activation will have its own slots. Lexical bindings select slot indices during compilation, without runtime name searches.
+This reserves space for every declaration in a function but avoids slot reuse and scope instructions.
+
+Constants contain booleans or an `IntegerConstant` with owned decimal digits and a negative flag.
+Compilation will preserve digits and defer integer conversion to execution, including literals in skipped code and the minimum signed integer.
+Instructions contain an `OpCode`, one index operand where applicable, and an owned `SourceLocation` value.
+Jump operands are absolute instruction indices within the current function. Call operands are function indices within the program.
+The format uses C++ records in memory. It defines no packed encoding, file serialization, or compatibility version.
+
+The instruction contract defines these stack effects:
+
+| Instruction | Operand | Stack effect and behavior |
+|-------------|---------|---------------------------|
+| `STEP` | None | Charge one source expression or statement entry without changing the value stack |
+| `LOAD_CONSTANT` | Constant index | Convert and push the constant when execution reaches the instruction |
+| `LOAD_LOCAL` | Local index | Push a copy, or report a read without a value |
+| `STORE_LOCAL` | Local index | Copy the top value into the slot and retain the top value |
+| `RESET_LOCAL` | Local index | Clear the slot before each declaration execution |
+| `POP` | None | Discard the top value |
+| `NEGATE`, `NOT` | None | Replace one operand with its unary result |
+| `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `REMAINDER` | None | Pop right and left operands, then push the numeric result |
+| `EQUAL`, `NOT_EQUAL`, `LESS`, `LESS_EQUAL`, `GREATER`, `GREATER_EQUAL` | None | Pop right and left operands, then push the boolean result |
+| `JUMP` | Instruction index | Continue at the target |
+| `JUMP_IF_FALSE`, `JUMP_IF_TRUE` | Instruction index | Pop a boolean and jump when it matches the condition |
+| `CALL` | Function index | Consume arguments in parameter order and push a result only for a non-void function |
+| `RETURN` | None | End the current function with its top value |
+| `RETURN_VOID` | None | End the current function without a value |
+| `UNREACHABLE` | None | Identify an internal control-flow failure if execution reaches it |
+
+Instruction positions preserve operators, name uses, calls, and statement locations for future diagnostics.
+Separate `STEP` instructions preserve source-level accounting even when lowering requires several stack operations.
+Synthetic jumps, constants, stores, and returns consume no extra source steps.
+The compiler will place loop-condition steps after the backward jump target and place skipped expression steps inside their selected paths.
+
+The printer numbers functions, constants, locals, and instructions from zero and includes each instruction position.
+It preserves integer digits, prints booleans as `true` or `false`, and uses quoted names.
+It prints structure without executing instructions or validating arbitrary caller-built bytecode.
+Phase 9 retains VM execution and interpreter comparisons. Phase 10 retains optimizations.
+
 ## Planned pipeline
 
 ```text

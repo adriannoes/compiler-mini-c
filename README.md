@@ -73,6 +73,10 @@ Phase 7 adds `if`/`else`, `while`, and a configurable step budget to execution.
 Function calls use isolated frames and copied parameters, including direct and mutual recursion.
 The [phase 7 rules](docs/language.md#phase-7-execution-rules) define these behaviors and the configurable execution limits.
 
+Phase 8 starts with owned bytecode records and the `minic::print_bytecode` disassembler, which prints instructions for inspection.
+The [bytecode contract](docs/architecture.md#bytecode-format-and-compilation) defines a stack instruction set with source positions and explicit step markers.
+Compilation and command integration remain in progress. The VM remains in phase 9.
+
 ## Build and use
 
 From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
@@ -190,10 +194,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 185 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, and commands.
+The 188 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, bytecode records, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-All 185 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+The 185 tests from phase 7 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -224,7 +228,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 5 | Type checking | done |
 | 6 | Tree-walk interpreter (stage A) | done |
 | 7 | Functions and control flow | done |
-| 8 | Bytecode compiler | pending |
+| 8 | Bytecode compiler | in progress |
 | 9 | VM (stage B, primary target) | pending |
 | 10 | Local optimizations | pending |
 | 11 | Optional language features | pending |

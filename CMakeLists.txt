@@ -23,6 +23,9 @@ add_library(minic_frontend
 )
 target_include_directories(minic_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+add_library(minic_bytecode src/bytecode.cpp)
+target_link_libraries(minic_bytecode PUBLIC minic_frontend)
+
 add_library(minic_runtime src/runtime.cpp src/interpreter.cpp)
 target_link_libraries(minic_runtime PUBLIC minic_frontend)
 
@@ -32,6 +35,12 @@ target_link_libraries(minic PRIVATE minic_runtime)
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_bytecode_tests tests/bytecode_test.cpp)
+  target_link_libraries(minic_bytecode_tests PRIVATE minic_bytecode)
+  foreach(case IN ITEMS empty format instructions)
+    add_test(NAME bytecode.${case} COMMAND minic_bytecode_tests ${case})
+  endforeach()
+
   add_executable(minic_interpreter_tests tests/interpreter_test.cpp)
   target_link_libraries(minic_interpreter_tests PRIVATE minic_runtime)
   foreach(case IN ITEMS arithmetic booleans assignments scopes initialization evaluation_order

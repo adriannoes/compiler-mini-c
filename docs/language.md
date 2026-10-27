@@ -593,6 +593,26 @@ The [Fibonacci example](../examples/fibonacci.mc) computes `fibonacci(10)` with 
 Each call receives its own copy of `n`, and intermediate values remain in the caller during nested calls.
 With `--run`, these examples print `720` and `55`, respectively, and return process status `0`.
 
+## Phase 8 bytecode rules
+
+The approved scope compiles the existing language to bytecode without adding syntax or executing the result.
+The planned API is `BytecodeProgram compile_bytecode(const Program&)`.
+It performs complete name and type analysis once before generating instructions for all functions.
+Like `--check`, compilation accepts an empty program and does not require `main` or an entry signature.
+The result owns its data and remains valid after the AST expires.
+
+Compilation preserves lexical bindings, copied parameters, argument order, short-circuit logic, branches, loops, and returns.
+Each function has separate parameter and local slots. Every declaration clears its slot before its initializer, including during repeated loop iterations.
+Integer constants retain their original digits and a separate sign for a directly negated literal.
+Compilation does not convert literals, evaluate arithmetic, or reject runtime errors in code that execution can skip.
+The static rules still apply to every function and statement.
+
+Source positions and explicit step markers retain the phase 7 execution contract for the future VM.
+The unary-minus literal case retains two source steps. Assignment targets do not add a separate read or step.
+The planned `--bytecode <file>` command prints deterministic instructions only after compilation succeeds.
+It preserves the existing diagnostic format, returns status `1` without standard output on errors, and leaves earlier commands unchanged.
+VM execution, binary file serialization, and optimizations remain outside phase 8.
+
 ## Planned language scope
 
 The following language scope grows phase by phase (see [roadmap.md](roadmap.md)):
