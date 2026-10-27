@@ -115,4 +115,74 @@ The C example uses C integer rules. It does not establish equivalence with Mini-
 An LLVM backend for Mini-C requires an explicit design for numeric errors, source positions, array checks, and execution limits.
 That design remains outside phase 12.
 
-The laboratory, annotated IR, and interview explanation follow in the next two approved increments.
+## Reproduce the laboratory
+
+The [sum function](../examples/llvm/sum.c) accumulates `next(index)` while `index < limit`.
+The [driver](../examples/llvm/driver.c) defines `next(value)` as `value + 1` and checks these cases:
+
+| Limit | Expected result |
+|------:|----------------:|
+| -2 | 0 |
+| 0 | 0 |
+| 1 | 1 |
+| 4 | 10 |
+| 8 | 36 |
+
+All arithmetic stays within the C `int` range for these inputs.
+The driver exits with status 1 if a case fails. Otherwise, it prints `10` and exits with status 0.
+The two source files compile separately within each command, so the IR for `sum_next` retains an external call to `next`.
+
+With CMake 3.20 or later and Clang on `PATH`, operate this command from the repository root:
+
+```bash
+cmake -P tests/llvm_lab.cmake
+```
+
+The [laboratory script](../tests/llvm_lab.cmake) creates `build-llvm-lab/`, which Git ignores.
+It emits IR at `-O0` and `-O1`, compiles both C and IR paths, and checks all four native executions.
+Each execution must print `10`, return status 0, and produce no standard error output.
+The script also rejects compiler warnings. It records the compiler version and results in that directory.
+It remains separate from CTest, so the compiler suite retains 398 tests and requires no Clang executable on `PATH`.
+
+To select a Clang executable explicitly, pass its path before `-P`:
+
+```bash
+cmake -DCLANG_EXECUTABLE=/usr/bin/clang -P tests/llvm_lab.cmake
+```
+
+On another host, replace `/usr/bin/clang` with that host's Clang path.
+
+After the script succeeds, inspect the generated files from the repository root:
+
+```bash
+cat build-llvm-lab/clang-version.txt
+cat build-llvm-lab/results.txt
+diff -u build-llvm-lab/sum.O0.ll build-llvm-lab/sum.O1.ll
+```
+
+The `diff` command returns status 1 when the IR files differ. The recorded compiler produces different files.
+To reproduce one IR generation and native compilation manually, use Clang from the same environment:
+
+```bash
+clang -std=c17 -Wall -Wextra -Wpedantic -O1 \
+  -S -emit-llvm -fno-discard-value-names \
+  examples/llvm/sum.c -o build-llvm-lab/sum.O1.ll
+clang -std=c17 -Wall -Wextra -Wpedantic -O1 \
+  build-llvm-lab/sum.O1.ll examples/llvm/driver.c -o build-llvm-lab/from-ir.O1
+./build-llvm-lab/from-ir.O1
+```
+
+The [Clang command guide](https://clang.llvm.org/docs/CommandGuide/clang.html) defines the optimization levels.
+The `-O1` result includes a pipeline of transformations, so this comparison does not isolate a single pass.
+
+## Recorded result
+
+The committed [O0 IR](../examples/llvm/sum.O0.ll) and [O1 IR](../examples/llvm/sum.O1.ll) come from Apple Clang 17.0.0 (`clang-1700.6.4.2`).
+Both modules record `arm64-apple-macosx15.0.0` as their target triple.
+They retain the compiler's attributes and metadata as generated.
+The reference files contain 54 and 43 lines, respectively. Line counts are observations, rather than performance measurements.
+All four native executions pass the five cases without warnings, print `10`, and return status 0.
+
+The O0 function uses three `alloca` instructions and explicit loads and stores.
+The O1 function uses no `alloca` and contains three `phi` instructions.
+Both contain one call to `next`. The annotated reading and interview explanation follow in the final increment.

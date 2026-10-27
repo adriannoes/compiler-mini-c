@@ -87,6 +87,19 @@ Array tests compare initialization, bounds, evaluation order, recursion, and sou
 The command tests compare output, diagnostics, and exit codes.
 CMake enables `-Wall -Wextra -Wpedantic` for Clang and GCC, including test targets.
 
+## LLVM laboratory
+
+The separate LLVM laboratory requires Clang in addition to CMake.
+With Clang and CMake available, operate the laboratory from the repository root:
+
+```bash
+cmake -P tests/llvm_lab.cmake
+```
+
+The command generates IR and checks four native executions under ignored `build-llvm-lab/`.
+The laboratory does not register CTest cases or change the compiler build dependencies.
+The [LLVM notes](theory-llvm.md#reproduce-the-laboratory) record prerequisites, manual commands, reference IR, and expected results.
+
 ## Sanitizer validation
 
 AddressSanitizer detects memory access errors, and UndefinedBehaviorSanitizer detects selected undefined C++ operations.

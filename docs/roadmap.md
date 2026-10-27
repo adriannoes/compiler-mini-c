@@ -432,6 +432,9 @@ Increment 1 records the pipeline map, SSA and memory distinction, tool roles, an
 The existing 398 tests pass before the phase begins, with no compiler warnings.
 The laboratory adds no compiler command, execution backend, or required tool dependency.
 Standalone `opt` and `llc` are unavailable on this host's `PATH`, so their execution remains an optional exercise.
+Increment 2 adds the C loop and driver, two reference IR files, and a separate CMake laboratory command.
+All four native checks pass five bounded cases each, print `10`, and return status 0 without compiler warnings.
+The IR examples record Apple Clang 17.0.0 and target `arm64-apple-macosx15.0.0`.
 
 Lookup terms: `LLVM IR`, `SSA`, `static single assignment`, `basic block`, `phi node`, `pass`, `pass manager`, `clang`, `opt`, `llc`, `code generation`, `target triple`
 

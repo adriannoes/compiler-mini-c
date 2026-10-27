@@ -272,6 +272,20 @@ Indices must fit the declared length, and an indexed assignment checks its index
 Lengths range from 1 through 1024. Arrays remain local and cannot act as whole values, arguments, or return values.
 These rules teach the difference between scalar values, indexed storage, and runtime index checks without adding pointers or dynamic allocation.
 
+## LLVM laboratory
+
+The [LLVM notes](docs/theory-llvm.md) map Mini-C stages to Clang/LLVM concepts.
+The independent C laboratory compares generated IR at `-O0` and `-O1` and checks native results from C and IR.
+With Clang and CMake available, operate it from the repository root:
+
+```bash
+cmake -P tests/llvm_lab.cmake
+```
+
+All four native executions check five cases, print `10`, and return status 0.
+The command keeps generated files in ignored `build-llvm-lab/` and records the compiler version and results there.
+It adds no dependency to the Mini-C build. The compiler does not emit LLVM IR.
+
 ## Tests
 
 After the build, run the tests from the repository root:
