@@ -5,6 +5,7 @@
 #include "parser.hpp"
 #include "resolution_printer.hpp"
 #include "type_checker.hpp"
+#include "vm.hpp"
 
 #include <fstream>
 #include <iomanip>
@@ -25,13 +26,15 @@ void print_usage() {
       << "  minic --check <file>\n"
       << "  minic --bytecode <file>\n"
       << "  minic --run <file>\n"
+      << "  minic --run-vm <file>\n"
       << "\n"
       << "Print token types, source text, and line:column positions.\n"
       << "Use --ast to print the syntax tree.\n"
       << "Use --resolve to print scopes, symbols, and name bindings.\n"
       << "Use --check to analyze Mini-C types.\n"
       << "Use --bytecode to print Mini-C instructions.\n"
-      << "Use --run to execute Mini-C programs.\n";
+      << "Use --run to execute Mini-C programs.\n"
+      << "Use --run-vm to compile and execute Mini-C on the VM.\n";
 }
 
 }  // namespace
@@ -50,8 +53,13 @@ int main(int argc, char** argv) {
   const bool check_mode = argc >= 2 && std::string(argv[1]) == "--check";
   const bool run_mode = argc >= 2 && std::string(argv[1]) == "--run";
   const bool bytecode_mode = argc >= 2 && std::string(argv[1]) == "--bytecode";
-  if (argc != 3 || (!ast_mode && !resolve_mode && !check_mode && !run_mode && !bytecode_mode &&
+  const bool vm_mode = argc >= 2 && std::string(argv[1]) == "--run-vm";
+  if (argc != 3 || (!ast_mode && !resolve_mode && !check_mode && !run_mode && !bytecode_mode && !vm_mode &&
                     std::string(argv[1]) != "--tokens")) {
+    if (vm_mode) {
+      std::cerr << "minic: error: Expected --run-vm <file>. Use --help for usage.\n";
+      return 1;
+    }
     if (bytecode_mode) {
       std::cerr << "minic: error: Expected --bytecode <file>. Use --help for usage.\n";
       return 1;
@@ -104,9 +112,9 @@ int main(int argc, char** argv) {
     } else if (check_mode) {
       const auto program = minic::parse(tokens);
       minic::check_types(program);
-    } else if (run_mode) {
+    } else if (run_mode || vm_mode) {
       const auto program = minic::parse(tokens);
-      const auto value = minic::interpret(program);
+      const auto value = vm_mode ? minic::execute_bytecode(minic::compile_bytecode(program)) : minic::interpret(program);
       const auto text = minic::format_value(value);
       if (!text.empty()) {
         std::cout << text << '\n';

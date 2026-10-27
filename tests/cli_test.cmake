@@ -3,6 +3,11 @@ set(input "${WORK_DIR}/${CASE}.mc")
 set(expected_exit 0)
 set(expected_error "")
 
+if(CASE MATCHES "^vm_")
+  set(vm_mode true)
+  string(REGEX REPLACE "^vm_" "run_" CASE "${CASE}")
+endif()
+
 if(CASE STREQUAL "hello")
   set(input "${SOURCE_DIR}/examples/hello.mc")
   file(READ "${SOURCE_DIR}/tests/hello.tokens" expected_output)
@@ -483,6 +488,11 @@ if(NOT DEFINED arguments)
   set(arguments --tokens "${input}")
 endif()
 
+if(vm_mode)
+  list(TRANSFORM arguments REPLACE "^--run$" "--run-vm")
+  string(REPLACE "Expected --run <file>" "Expected --run-vm <file>" expected_error "${expected_error}")
+endif()
+
 execute_process(
   COMMAND "${MINIC}" ${arguments}
   RESULT_VARIABLE exit_code
@@ -522,6 +532,10 @@ if(CASE STREQUAL "help")
   string(FIND "${output}" "minic --run <file>" run_usage_position)
   if(run_usage_position EQUAL -1)
     message(FATAL_ERROR "Help does not describe the execution command.")
+  endif()
+  string(FIND "${output}" "minic --run-vm <file>" vm_usage_position)
+  if(vm_usage_position EQUAL -1)
+    message(FATAL_ERROR "Help does not describe the VM execution command.")
   endif()
 elseif(NOT "${output}" STREQUAL "${expected_output}")
   message(FATAL_ERROR "Expected stdout:\n${expected_output}\nReceived stdout:\n${output}")

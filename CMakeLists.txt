@@ -33,7 +33,7 @@ add_library(minic_vm src/vm.cpp)
 target_link_libraries(minic_vm PUBLIC minic_bytecode minic_runtime)
 
 add_executable(minic src/main.cpp)
-target_link_libraries(minic PRIVATE minic_runtime minic_bytecode)
+target_link_libraries(minic PRIVATE minic_vm)
 
 include(CTest)
 
@@ -49,6 +49,7 @@ if(BUILD_TESTING)
   endforeach()
   set_tests_properties(vm.step_limits vm.call_depth vm.shared_budget vm.deep_calls PROPERTIES TIMEOUT 10)
   set_tests_properties(vm.differential_limits PROPERTIES TIMEOUT 30)
+  add_test(NAME vm.fixtures COMMAND minic_vm_tests fixtures "${CMAKE_CURRENT_SOURCE_DIR}/examples")
 
   add_executable(minic_bytecode_compiler_tests tests/bytecode_compiler_test.cpp)
   target_link_libraries(minic_bytecode_compiler_tests PRIVATE minic_bytecode)
@@ -167,7 +168,20 @@ if(BUILD_TESTING)
         "-DCASE=${case}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_test.cmake"
     )
+    if(case MATCHES "^run_")
+      string(REGEX REPLACE "^run_" "vm_" vm_case "${case}")
+      add_test(NAME cli.${vm_case}
+        COMMAND ${CMAKE_COMMAND}
+          "-DMINIC=$<TARGET_FILE:minic>"
+          "-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+          "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/test-data"
+          "-DCASE=${vm_case}"
+          -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_test.cmake"
+      )
+    endif()
   endforeach()
   set_tests_properties(cli.run_step_limit PROPERTIES TIMEOUT 30)
   set_tests_properties(cli.run_call_depth PROPERTIES TIMEOUT 10)
+  set_tests_properties(cli.vm_step_limit PROPERTIES TIMEOUT 30)
+  set_tests_properties(cli.vm_call_depth PROPERTIES TIMEOUT 10)
 endif()

@@ -5,6 +5,8 @@
 #include "vm.hpp"
 
 #include <iostream>
+#include <fstream>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <string_view>
@@ -324,6 +326,21 @@ void differential_limits() {
   }
 }
 
+void fixtures(const std::string& directory) {
+  for (const std::string name : {"hello", "lexer", "calls", "control_flow", "scopes", "recursion", "types",
+                                 "interpreter", "short_circuit", "runtime_error", "factorial", "fibonacci"}) {
+    std::ifstream input(directory + "/" + name + ".mc", std::ios::binary);
+    require(input.is_open(), "Cannot open the example " + name + ".");
+    std::string source{std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+    if (name == "control_flow") {
+      source += "\nint main() { return choose(true, false); }\n";
+    } else if (name == "recursion") {
+      source += "\nbool main() { return even(10) && odd(9); }\n";
+    }
+    compare(source);
+  }
+}
+
 void invalid_bytecode() {
   for (const auto opcode : {minic::OpCode::Pop, minic::OpCode::LoadConstant, minic::OpCode::LoadLocal,
                             minic::OpCode::Jump, static_cast<minic::OpCode>(999)}) {
@@ -365,6 +382,16 @@ void invalid_bytecode() {
 }  // namespace
 
 int main(int argc, char** argv) {
+  if (argc == 3 && std::string_view(argv[1]) == "fixtures") {
+    try {
+      fixtures(argv[2]);
+      std::cout << "PASS fixtures\n";
+      return 0;
+    } catch (const std::exception& caught) {
+      std::cerr << "FAIL fixtures: " << caught.what() << '\n';
+      return 1;
+    }
+  }
   const struct { const char* name; void (*run)(); } cases[] = {
       {"arithmetic", arithmetic}, {"booleans", booleans}, {"assignments", assignments}, {"scopes", scopes},
       {"initialization", initialization}, {"evaluation_order", evaluation_order}, {"short_circuit", short_circuit},

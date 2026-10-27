@@ -34,6 +34,7 @@ The `--resolve` command also resolves names and prints scopes, symbols, and bind
 The `--check` command also analyzes Mini-C types and returns success without printing output.
 The `--bytecode` command analyzes the program, compiles instructions, and prints their disassembly.
 The `--run` command completes static analysis, executes the supported subset, and prints the entry result when it has a value.
+The `--run-vm` command compiles the analyzed program and executes its bytecode through the VM.
 
 ```text
 source (.mc) -> minic::lex -> tokens
@@ -44,6 +45,7 @@ Program -> minic::resolve_names -> NameResolution -> --resolve output
 Program -> minic::check_types -> TypeAnalysis -> --check status
 Program -> minic::compile_bytecode -> BytecodeProgram -> --bytecode output
 Program -> minic::interpret -> Value -> --run output
+Program -> minic::compile_bytecode -> BytecodeProgram -> minic::execute_bytecode -> Value -> --run-vm output
 ```
 
 `src/token.hpp` defines token types and source positions.
@@ -66,7 +68,8 @@ The command emits no partial token list on failure.
 
 The `minic_frontend` CMake library contains tokens, the lexer, the parser, the symbol table, name resolution, and type analysis.
 It also contains the AST and resolution printers.
-The `minic` executable links to `minic_runtime` and `minic_bytecode`, which depend on `minic_frontend`.
+The `minic` executable links to `minic_vm`, which links to `minic_runtime` and `minic_bytecode`.
+Both libraries depend on `minic_frontend`.
 Analysis tests link directly to `minic_frontend`, and runtime tests link to `minic_runtime`.
 CTest also runs command tests against the built executable.
 See [tech-stack.md](tech-stack.md) for build and test commands and [language.md](language.md) for lexical rules.
@@ -413,7 +416,7 @@ The default call-depth limit passes the recursive error cases under both sanitiz
 
 ## Bytecode format and compilation
 
-Bytecode is an instruction sequence for the planned stack VM.
+Bytecode is an instruction sequence for the stack VM.
 The `minic_bytecode` library owns its format and deterministic printer independently of the interpreter.
 The library provides `BytecodeProgram`, its records, `compile_bytecode`, and `print_bytecode`.
 The `--bytecode` command prints the complete disassembly after compilation succeeds.
@@ -477,13 +480,13 @@ Twelve existing examples compile and pass the stack analysis, including factoria
 Six exact command fixtures cover hello, calls, control flow, short-circuit logic, factorial, and the runtime-error example.
 The fixtures record source positions, slot indices, constant text, function indices, and jump targets.
 Sixteen command tests cover those fixtures, entry-independent compilation, numeric text, argument errors, and the existing front-end diagnostics.
-The complete suite contains 222 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+Phase 8 ends with 222 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
 The commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
 
 The printer numbers functions, constants, locals, and instructions from zero and includes each instruction position.
 It preserves integer digits, prints booleans as `true` or `false`, and uses quoted names.
 It prints structure without executing instructions or validating arbitrary caller-built bytecode.
-Phase 9 retains VM execution and interpreter comparisons. Phase 10 retains optimizations.
+The VM executes the instruction contract and supports comparisons with the interpreter. Phase 10 retains optimizations.
 Bytecode compilation and printing still traverse finite C++ structures and retain the existing native-stack limit for deeply nested source.
 
 ## VM execution
@@ -501,7 +504,8 @@ This design supports recursive Mini-C calls without adding recursive C++ calls.
 
 The stack base separates caller temporaries from the current activation.
 Stack operations guard that boundary, instruction and operand indices have bounds guards, and arithmetic guards operand types.
-An invalid executed instruction reports `std::invalid_argument`. `UNREACHABLE` reports an internal logic error if a typed non-void function falls through.
+Invalid indices and operand types report `std::invalid_argument` when an instruction uses them.
+`UNREACHABLE` reports an internal logic error if a typed non-void function falls through.
 The API expects compiler-produced control flow. These guards do not define a loader or verifier for arbitrary binary programs.
 
 `LOAD_CONSTANT` converts owned digits only when execution reaches the instruction.
@@ -517,12 +521,23 @@ The caller instruction index already points after `CALL`, so ending the callee r
 The machine ends each frame with an empty temporary range, then supplies a result only for a non-void return.
 No frame or value reference survives vector growth during call entry or return.
 
-Twenty-six VM groups cover operations, slots, branches, loops, calls, return restoration, numeric errors, limits, ownership, and guarded accesses.
+Twenty-seven VM groups cover operations, slots, branches, loops, calls, return restoration, numeric errors, limits, ownership, guarded accesses, and examples.
 The deep-call test reaches 5002 active frames and returns through pending additions with a configured call-depth limit of 6000.
 Differential tests compare values and exact runtime messages and positions with the interpreter.
 The budget test compares ten programs at eighty step limits and three call-depth limits, for 2400 engine comparisons.
 It covers both completed runs and stopped runs, including loops, skipped operands, nested calls, and shared budgets.
-Command integration and final sanitizer validation follow in the last increment.
+
+The fixture group compares twelve existing examples between the VM and interpreter, including the runtime-error example.
+Temporary entries preserve the source fixtures for control flow and mutual recursion.
+Thirty-one VM command tests reuse the interpreter scenarios with a distinct temporary file path and the `--run-vm` flag.
+They compare exact output, diagnostics, and exit codes, including default step and depth failures.
+The command compiles before execution and prints only the completed result through the existing value formatter.
+The complete suite contains 280 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The prose scan reports no findings. The build commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
+
+Explicit VM calls use heap-owned frame and value vectors. Source parsing and AST compilation retain their existing native-stack limits.
+The step and depth limits constrain compiler-produced execution, with `STEP` marking the source-level budget.
+The format still defines no binary loader, optimizer, or compatibility version.
 
 ## Planned pipeline
 

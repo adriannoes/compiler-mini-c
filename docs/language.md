@@ -607,7 +607,7 @@ Integer constants retain their original digits and a separate sign for a directl
 Compilation does not convert literals, evaluate arithmetic, or reject runtime errors in code that execution can skip.
 The static rules still apply to every function and statement.
 
-Source positions and explicit step markers retain the phase 7 execution contract for the future VM.
+Source positions and explicit step markers retain the phase 7 execution contract for the VM.
 The unary-minus literal case retains two source steps. Assignment targets do not add a separate read or step.
 The `--bytecode <file>` command prints deterministic instructions only after compilation succeeds.
 It preserves the existing diagnostic format, returns status `1` without standard output on errors, and leaves earlier commands unchanged.
@@ -657,10 +657,24 @@ Step exhaustion identifies the next source node. Depth exhaustion identifies the
 Indices, operand types, and stack access have guards that report malformed executed bytecode as `std::invalid_argument`.
 The API contract requires compiler-produced control flow, including `STEP` on execution cycles.
 
-The planned `--run-vm <file>` command will compile the source and execute `main` on the VM.
-It will retain `--run` output, diagnostic, and exit-status rules, including no partial result on errors.
-The existing `--run` command will continue to use the tree-walk interpreter.
+The `--run-vm <file>` command compiles the source and executes `main` on the VM.
+It retains `--run` output, diagnostic, and exit-status rules, including no partial result on errors.
+The command completes static analysis and compilation before it selects or executes the entry.
+The existing `--run` command continues to use the tree-walk interpreter.
 Optimizations and binary serialization remain outside phase 9.
+
+From the repository root, operate the VM command after the build:
+
+```bash
+./build/minic --run-vm examples/factorial.mc
+./build/minic --run-vm examples/fibonacci.mc
+./build/minic --run-vm examples/short_circuit.mc
+./build/minic --run-vm examples/runtime_error.mc
+```
+
+The first three commands print `720`, `55`, and `true`, respectively, and return status `0`.
+The runtime-error command reports `The variable "value" has no value.` at line 3, column 15, and returns status `1`.
+The control-flow and mutual-recursion examples still require an entry for execution, while compilation alone accepts them unchanged.
 
 ## Planned language scope
 

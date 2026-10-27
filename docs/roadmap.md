@@ -317,7 +317,7 @@ Lookup terms: `intermediate representation`, `IR`, `three-address code`, `byteco
 
 ## Phase 9: VM (stage B, primary target)
 
-Status: in progress.
+Status: complete.
 
 The approved rules live in [language.md](language.md#phase-9-vm-rules).
 Frame and stack ownership live in [architecture.md](architecture.md#vm-execution).
@@ -335,14 +335,20 @@ Increment 2 adds explicit call frames, copied parameter values, direct and mutua
 Eleven more VM groups cover calls, return restoration, callee errors, shared limits, deep calls, and interpreter comparisons.
 The deep-call test reaches 5002 active frames without recursive C++ calls.
 Differential budget tests compare 2400 combinations of source programs, step limits, and call-depth limits.
-Command integration and final validation remain pending.
+
+Increment 3 adds `--run-vm` and thirty-one command tests that reuse the interpreter scenarios.
+An additional VM group compares twelve existing examples between both execution engines.
+Temporary entry functions preserve the original control-flow and mutual-recursion examples.
+All 280 tests pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings.
+The prose scan reports no findings. Optimizations and binary serialization remain outside this phase.
 
 Lookup terms: `virtual machine`, `stack machine`, `fetch-decode-execute`, `instruction dispatch`, `frame pointer`, `runtime error`
 
 - [x] VM core instructions and source step limits
 - [x] Explicit function frames and call-depth limits
-- [ ] Execute the same examples as stages 6-7 on the VM
+- [x] Execute the same examples as stages 6-7 on the VM
 - [x] Differential tests: interpreter vs VM results where useful
+- [x] Final normal and sanitizer validation
 
 ## Phase 10: Local optimizations
 

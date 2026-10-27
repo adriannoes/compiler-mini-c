@@ -28,7 +28,7 @@ Each stage uses hand-written code, examples, and automated tests.
 The repository records the work for a public portfolio.
 
 The goal is to learn undergraduate compiler concepts and apply them to general software engineering.
-The planned execution target is a custom bytecode virtual machine.
+The execution target is a custom bytecode virtual machine.
 Parsing theory and LLVM study support technical discussions. Specialist compiler engineering is outside the project scope.
 
 The project plan is complete.
@@ -76,11 +76,11 @@ The [phase 7 rules](docs/language.md#phase-7-execution-rules) define these behav
 Phase 8 provides owned bytecode records, `minic::compile_bytecode`, and the `minic::print_bytecode` disassembler, which prints instructions for inspection.
 The [bytecode contract](docs/architecture.md#bytecode-format-and-compilation) defines a stack instruction set with source positions and explicit step markers.
 Compilation covers the current language after static analysis.
-The `--bytecode` command prints instructions without executing them. The VM remains in phase 9.
+The `--bytecode` command prints instructions without executing them.
 
 Phase 9 provides `minic::execute_bytecode` for entries, local variables, operations, branches, loops, calls, and returns.
 It shares numeric rules and source step limits with the interpreter and uses explicit frames for recursion.
-Command integration remains in progress.
+The `--run-vm` command compiles the source and executes `main` on the VM.
 The [VM rules](docs/language.md#phase-9-vm-rules) define the approved execution contract.
 
 ## Build and use
@@ -107,6 +107,8 @@ cmake --build build
 ./build/minic --run examples/short_circuit.mc
 ./build/minic --run examples/factorial.mc
 ./build/minic --run examples/fibonacci.mc
+./build/minic --run-vm examples/factorial.mc
+./build/minic --run-vm examples/fibonacci.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -213,7 +215,18 @@ end
 
 Indices start at zero. `STEP` marks a source expression or statement entry, and `@line:column` records its source position.
 `UNREACHABLE` guards against internal fallthrough from a non-void function.
-The [instruction table](docs/architecture.md#bytecode-format-and-compilation) defines operands and stack effects for the future VM.
+The [instruction table](docs/architecture.md#bytecode-format-and-compilation) defines operands and stack effects for the VM.
+
+The `--run-vm` command prints `720` for the factorial example and `55` for the Fibonacci example.
+Both commands return status `0`. Integers and booleans include a newline, and a `void` result produces no output.
+The command compiles all functions before selecting `main`, so static errors retain priority over execution errors.
+The VM requires an entry without parameters, while `--bytecode` still accepts programs without an entry.
+The control-flow and mutual-recursion tests add temporary entries without changing their source examples.
+
+The interpreter and VM share signed 64-bit numeric rules, missing-value errors, and the default execution limits.
+Only source steps consume the budget. The VM uses explicit frames, so recursive Mini-C calls do not use recursive C++ calls.
+The API accepts custom limits through `execute_bytecode(bytecode, entry, limits)` and returns a value independent of the bytecode lifetime.
+The existing `--run` command continues to use the tree-walk interpreter.
 
 ## Tests
 
@@ -223,10 +236,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 248 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, interpretation, bytecode, VM execution, and commands.
+The 280 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, interpretation, bytecode, VM execution, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-The 222 tests from phase 8 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+All 280 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -258,7 +271,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 6 | Tree-walk interpreter (stage A) | done |
 | 7 | Functions and control flow | done |
 | 8 | Bytecode compiler | done |
-| 9 | VM (stage B, primary target) | in progress |
+| 9 | VM (stage B, primary target) | done |
 | 10 | Local optimizations | pending |
 | 11 | Optional language features | pending |
 | 12 | LLVM literacy | pending |
@@ -269,5 +282,6 @@ Phase 4 adds name resolution without changing those syntax contracts.
 Phase 5 adds type analysis and the independent `--check` command.
 Phase 6 executes the expression and block subset through `--run`.
 Phase 7 adds calls, control flow, and recursion before bytecode and VM work.
-Phase 8 compiles the same language to inspectable bytecode. Phase 9 will execute it in the VM.
+Phase 8 compiles the same language to inspectable bytecode.
+Phase 9 executes bytecode with explicit frames and compares its results and diagnostics with the interpreter.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.
