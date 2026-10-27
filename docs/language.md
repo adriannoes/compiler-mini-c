@@ -335,8 +335,8 @@ The complete examples live in [scopes.resolution](../tests/scopes.resolution) an
 
 Type checking determines whether expressions and declarations use compatible Mini-C types.
 These rules define the approved phase 5 scope without changing the grammar or name rules.
-The front-end library provides the basic type rules.
-AST type analysis and the `--check` command remain pending.
+The front-end library provides `check_types` analysis and the basic type rules.
+The `--check` command remains pending.
 
 ### Types and expressions
 
@@ -391,8 +391,12 @@ This limit keeps return analysis separate from constant evaluation and program e
 The checker stops at the first error and returns no partial analysis.
 Name resolution completes before type analysis, so name errors take priority throughout the program.
 Function signature errors precede body type errors.
-Other type errors follow source traversal order.
 Diagnostics identify invalid type syntax, an incompatible expression, an invalid call or return, or a missing return guarantee.
+
+The checker visits expression children before their parent, with left operands before right operands.
+It examines argument counts before argument types, then visits arguments in source order.
+Declaration type errors precede initializer analysis, and invalid return forms precede returned-expression analysis.
+Missing return guarantees follow the complete function body analysis.
 
 The token, AST, and resolution commands do not perform type checking.
 The checker does not enforce numeric limits, analyze definite initialization, require `main`, or execute code.

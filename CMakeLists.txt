@@ -19,6 +19,7 @@ add_library(minic_frontend
   src/symbol_table.cpp
   src/token.cpp
   src/type_rules.cpp
+  src/type_checker.cpp
 )
 target_include_directories(minic_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
@@ -28,6 +29,14 @@ target_link_libraries(minic PRIVATE minic_frontend)
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_type_checker_tests tests/type_checker_test.cpp)
+  target_link_libraries(minic_type_checker_tests PRIVATE minic_frontend)
+  foreach(case IN ITEMS empty expression_types declarations assignments operators shadowing
+                        calls arity argument_types void_uses conditions returns return_paths
+                        unreachable stage_priority names_and_numbers)
+    add_test(NAME types.${case} COMMAND minic_type_checker_tests ${case})
+  endforeach()
+
   add_executable(minic_type_rules_tests tests/type_rules_test.cpp)
   target_link_libraries(minic_type_rules_tests PRIVATE minic_frontend)
   foreach(case IN ITEMS syntax arithmetic comparisons logic equality)

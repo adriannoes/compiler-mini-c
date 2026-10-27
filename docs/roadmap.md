@@ -192,13 +192,19 @@ Delivery uses three local increments:
 
 Increment 1 is complete: `Type` and the internal rules distinguish `int`, `bool`, and `void` without conversions.
 Five new test groups cover type syntax, arithmetic, comparisons, logic, and equality, including invalid operand types.
-The AST analysis and command remain pending. Phase 5 is not complete.
+
+Increment 2 is complete: `check_types` returns expression types and owns the matching name-resolution result.
+Sixteen new API test groups cover expressions, declarations, assignments, shadowing, calls, conditions, returns, and return guarantees.
+They also cover error priority, AST preservation, result ownership, and accepted numeric and initialization limits.
+The command and final sanitizer validation remain pending. Phase 5 is not complete.
 
 Lookup terms: `semantic analysis`, `type checking`, `type system`, `type environment`, `syntax-directed definition`, `attribute grammar`, `annotated AST`, `arity`, `return path`
 
-- [ ] Check `int` / `bool` / `void` programs
-- [ ] Clear compile-time diagnostics
-- [ ] Tests for type errors
+- [x] Check `int` / `bool` / `void` programs
+- [x] Clear compile-time diagnostics
+- [x] Tests for type errors
+- [ ] Type-check command and examples
+- [ ] Final normal and sanitizer validation
 
 ## Phase 6: Tree-walk interpreter (stage A)
 

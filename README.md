@@ -49,7 +49,7 @@ The `--ast` command prints the tree after lexing and parsing succeed.
 The parser supports expressions, functions with parameters, named calls, local declarations, blocks, and return statements.
 It also supports `if`/`else` and `while`, including bodies without braces.
 Phase 2 is complete within the [approved grammar](docs/language.md#phase-2-grammar).
-The program does not analyze Mini-C types or execute programs.
+The compiler does not execute programs.
 See [docs/language.md](docs/language.md) for lexical rules, grammar, precedence, and accepted limits.
 
 Phase 3 study notes include worked FIRST/FOLLOW sets, LL(1) decisions, and a shift/reduce trace.
@@ -60,9 +60,10 @@ The approved [name rules](docs/language.md#phase-4-name-rules) record visibility
 The analysis returns separate declaration bindings without modifying the AST.
 The `--resolve` command prints scopes, symbols, and the declaration selected for each name use.
 
-Phase 5 starts with explicit rules for `int`, `bool`, and `void` in the front-end library.
+Phase 5 provides `minic::check_types` and explicit rules for `int`, `bool`, and `void` in the front-end library.
 The approved [type rules](docs/language.md#phase-5-type-rules) define operators, declarations, calls, conditions, and returns.
-AST type analysis and the `--check` command remain pending.
+The analysis returns expression types and owns its name-resolution result without modifying the AST.
+The `--check` command remains pending.
 
 ## Build and use
 
@@ -123,7 +124,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 85 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, type rules, and command behavior.
+The 101 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 The original 80 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.

@@ -238,15 +238,39 @@ Explicit operator rules prevent accidental C++ conversions between Mini-C intege
 Variables and parameters reject `void` at the written type keyword position.
 Operator errors identify the operator position.
 
-The planned `check_types(const Program&)` API will return `TypeAnalysis` without changing the AST.
-The result will own its `NameResolution` and expression-type map.
-Internal name resolution will prevent callers from pairing the type analysis with bindings from a different program.
-The result will borrow AST nodes, so the caller must keep the tree alive, unchanged, and unmoved.
+`check_types(const Program&)` returns `TypeAnalysis` without changing the AST.
+The result owns its `NameResolution` and expression-type map.
+Internal name resolution prevents callers from pairing the type analysis with bindings from a different program.
+The result borrows AST nodes, so the caller must keep the tree alive, unchanged, and unmoved.
 This adds auxiliary storage but leaves all earlier analysis modes independent.
+
+`TypeAnalysis::type_of(const Expr&)` returns an optional type for an expression in the analyzed tree.
+`resolution()` exposes a read-only view of the owned bindings and symbol table.
+Result copies and moves preserve these associations, but the AST must retain its original nodes.
+Deleted overloads reject temporary programs to prevent immediately expired references.
+
+The checker first resolves every name, then prepares function signatures, then visits all bodies.
+The complete signature pass permits forward calls without delaying argument or return-type analysis.
+Each expression records its result type in a separate map after its children pass analysis.
+Assignment targets also receive expression types.
+The checker obtains variable and parameter types from the declaration selected by name resolution.
+
+Statement traversal also computes whether a statement guarantees return.
+Only returns, blocks with a guaranteed return, and conditionals with two returning branches establish that guarantee.
+Loops never establish it because the checker does not evaluate conditions.
+Traversal continues after a guaranteed return to detect type errors in later statements.
+This limit avoids a control-flow graph but rejects some valid nonterminating functions.
 
 The final increment will add `--check <file>` with empty standard output and return code `0` on success.
 Errors will use the existing positioned diagnostic format and return code `1`.
 The command will not execute the program or require a `main` function.
+
+## Type analysis learning note
+
+The AST records the written type, but a name use needs the declaration selected by lexical scope.
+Name resolution supplies that declaration, and type analysis uses it without another scope search.
+Operator rules then combine child types into a parent type.
+The separate result makes those computed types observable without adding semantic state to the syntax tree.
 
 ## Planned pipeline
 
