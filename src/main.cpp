@@ -1,4 +1,5 @@
 #include "ast_printer.hpp"
+#include "bytecode_compiler.hpp"
 #include "interpreter.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
@@ -22,12 +23,14 @@ void print_usage() {
       << "  minic --ast <file>\n"
       << "  minic --resolve <file>\n"
       << "  minic --check <file>\n"
+      << "  minic --bytecode <file>\n"
       << "  minic --run <file>\n"
       << "\n"
       << "Print token types, source text, and line:column positions.\n"
       << "Use --ast to print the syntax tree.\n"
       << "Use --resolve to print scopes, symbols, and name bindings.\n"
       << "Use --check to analyze Mini-C types.\n"
+      << "Use --bytecode to print Mini-C instructions.\n"
       << "Use --run to execute Mini-C programs.\n";
 }
 
@@ -46,7 +49,13 @@ int main(int argc, char** argv) {
   const bool resolve_mode = argc >= 2 && std::string(argv[1]) == "--resolve";
   const bool check_mode = argc >= 2 && std::string(argv[1]) == "--check";
   const bool run_mode = argc >= 2 && std::string(argv[1]) == "--run";
-  if (argc != 3 || (!ast_mode && !resolve_mode && !check_mode && !run_mode && std::string(argv[1]) != "--tokens")) {
+  const bool bytecode_mode = argc >= 2 && std::string(argv[1]) == "--bytecode";
+  if (argc != 3 || (!ast_mode && !resolve_mode && !check_mode && !run_mode && !bytecode_mode &&
+                    std::string(argv[1]) != "--tokens")) {
+    if (bytecode_mode) {
+      std::cerr << "minic: error: Expected --bytecode <file>. Use --help for usage.\n";
+      return 1;
+    }
     if (run_mode) {
       std::cerr << "minic: error: Expected --run <file>. Use --help for usage.\n";
       return 1;
@@ -102,6 +111,9 @@ int main(int argc, char** argv) {
       if (!text.empty()) {
         std::cout << text << '\n';
       }
+    } else if (bytecode_mode) {
+      const auto program = minic::parse(tokens);
+      std::cout << minic::print_bytecode(minic::compile_bytecode(program));
     } else {
       for (const auto& token : tokens) {
         std::cout << token.location.line << ':' << token.location.column << ' '

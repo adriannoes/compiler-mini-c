@@ -30,7 +30,7 @@ add_library(minic_runtime src/runtime.cpp src/interpreter.cpp)
 target_link_libraries(minic_runtime PUBLIC minic_frontend)
 
 add_executable(minic src/main.cpp)
-target_link_libraries(minic PRIVATE minic_runtime)
+target_link_libraries(minic PRIVATE minic_runtime minic_bytecode)
 
 include(CTest)
 
@@ -42,6 +42,8 @@ if(BUILD_TESTING)
                         numeric_text step_markers static_errors ownership)
     add_test(NAME compilation.${case} COMMAND minic_bytecode_compiler_tests ${case})
   endforeach()
+  add_test(NAME compilation.fixtures
+    COMMAND minic_bytecode_compiler_tests fixtures "${CMAKE_CURRENT_SOURCE_DIR}/examples")
 
   add_executable(minic_bytecode_tests tests/bytecode_test.cpp)
   target_link_libraries(minic_bytecode_tests PRIVATE minic_bytecode)
@@ -136,7 +138,12 @@ if(BUILD_TESTING)
                         run_missing_file run_missing_argument run_extra_argument
                         run_factorial run_fibonacci run_scopes run_types run_lexer
                         run_control_flow run_mutual_recursion run_step_limit run_call_depth
-                        run_callee_error)
+                        run_callee_error
+                        bytecode_hello bytecode_factorial bytecode_control_flow bytecode_short_circuit
+                        bytecode_calls bytecode_empty bytecode_runtime_error bytecode_numeric_text
+                        bytecode_entry_parameters bytecode_type_error bytecode_resolution_error
+                        bytecode_syntax_error bytecode_lexical_error bytecode_missing_file
+                        bytecode_missing_argument bytecode_extra_argument)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"

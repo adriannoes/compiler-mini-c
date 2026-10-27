@@ -75,7 +75,8 @@ The [phase 7 rules](docs/language.md#phase-7-execution-rules) define these behav
 
 Phase 8 provides owned bytecode records, `minic::compile_bytecode`, and the `minic::print_bytecode` disassembler, which prints instructions for inspection.
 The [bytecode contract](docs/architecture.md#bytecode-format-and-compilation) defines a stack instruction set with source positions and explicit step markers.
-Compilation covers the current language after static analysis. Command integration remains in progress, and the VM remains in phase 9.
+Compilation covers the current language after static analysis.
+The `--bytecode` command prints instructions without executing them. The VM remains in phase 9.
 
 ## Build and use
 
@@ -95,6 +96,8 @@ cmake --build build
 ./build/minic --resolve examples/recursion.mc
 ./build/minic --check examples/types.mc
 ./build/minic --check examples/recursion.mc
+./build/minic --bytecode examples/hello.mc
+./build/minic --bytecode examples/factorial.mc
 ./build/minic --run examples/interpreter.mc
 ./build/minic --run examples/short_circuit.mc
 ./build/minic --run examples/factorial.mc
@@ -186,6 +189,27 @@ These limits bound loops and recursion. The CLI uses fixed defaults and adds no 
 The API accepts positive limits through `interpret(program, entry, ExecutionLimits{max_steps, max_call_depth})`.
 The original `interpret(program, entry)` API uses the defaults.
 
+The bytecode command accepts programs without `main`, including the control-flow and mutual-recursion examples.
+It also accepts runtime-error examples because compilation does not read variables or evaluate arithmetic.
+The [hello bytecode fixture](tests/hello.bytecode) records its complete instruction output:
+
+```text
+bytecode
+function 0 "main" int parameters=0 @3:5
+  constant 0 int "0"
+  0 STEP @3:12
+  1 STEP @4:3
+  2 STEP @4:10
+  3 LOAD_CONSTANT 0 @4:10
+  4 RETURN @4:3
+  5 UNREACHABLE @3:12
+end
+```
+
+Indices start at zero. `STEP` marks a source expression or statement entry, and `@line:column` records its source position.
+`UNREACHABLE` guards against internal fallthrough from a non-void function.
+The [instruction table](docs/architecture.md#bytecode-format-and-compilation) defines operands and stack effects for the future VM.
+
 ## Tests
 
 After the build, run the tests from the repository root:
@@ -194,10 +218,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 205 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, bytecode compilation, and commands.
+The 222 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, bytecode compilation, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-The 185 tests from phase 7 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+All 222 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -228,7 +252,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 5 | Type checking | done |
 | 6 | Tree-walk interpreter (stage A) | done |
 | 7 | Functions and control flow | done |
-| 8 | Bytecode compiler | in progress |
+| 8 | Bytecode compiler | done |
 | 9 | VM (stage B, primary target) | pending |
 | 10 | Local optimizations | pending |
 | 11 | Optional language features | pending |
@@ -240,4 +264,5 @@ Phase 4 adds name resolution without changing those syntax contracts.
 Phase 5 adds type analysis and the independent `--check` command.
 Phase 6 executes the expression and block subset through `--run`.
 Phase 7 adds calls, control flow, and recursion before bytecode and VM work.
+Phase 8 compiles the same language to inspectable bytecode. Phase 9 will execute it in the VM.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

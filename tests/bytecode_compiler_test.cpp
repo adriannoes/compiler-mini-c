@@ -5,6 +5,7 @@
 #include "type_checker.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <optional>
@@ -345,9 +346,30 @@ void ownership() {
           "Expected bytecode to outlive a temporary AST.");
 }
 
+void fixtures(const std::string& directory) {
+  for (const std::string name : {"hello", "lexer", "calls", "control_flow", "scopes", "recursion", "types",
+                                 "interpreter", "short_circuit", "runtime_error", "factorial", "fibonacci"}) {
+    std::ifstream input(directory + "/" + name + ".mc", std::ios::binary);
+    require(input.is_open(), "Cannot open the example " + name + ".");
+    const std::string source{std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+    const auto result = compile(source);
+    require(!result.functions.empty(), "Expected compiled functions in the example " + name + ".");
+  }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
+  if (argc == 3 && std::string_view(argv[1]) == "fixtures") {
+    try {
+      fixtures(argv[2]);
+      std::cout << "PASS fixtures\n";
+      return 0;
+    } catch (const std::exception& error) {
+      std::cerr << "FAIL fixtures: " << error.what() << '\n';
+      return 1;
+    }
+  }
   const struct { const char* name; void (*run)(); } cases[] = {
       {"empty", empty}, {"entry_independent", entry_independent}, {"expressions", expressions},
       {"assignments", assignments}, {"scopes", scopes}, {"loop_slots", loop_slots},

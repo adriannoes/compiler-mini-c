@@ -50,6 +50,82 @@ elseif(CASE STREQUAL "missing_argument")
   set(expected_exit 1)
   set(expected_output "")
   set(expected_error "minic: error: Expected --tokens <file>. Use --help for usage.\n")
+elseif(CASE STREQUAL "bytecode_hello" OR CASE STREQUAL "bytecode_factorial" OR CASE STREQUAL "bytecode_control_flow"
+       OR CASE STREQUAL "bytecode_short_circuit" OR CASE STREQUAL "bytecode_calls" OR CASE STREQUAL "bytecode_runtime_error")
+  string(REGEX REPLACE "^bytecode_" "" example "${CASE}")
+  set(input "${SOURCE_DIR}/examples/${example}.mc")
+  set(arguments --bytecode "${input}")
+  file(READ "${SOURCE_DIR}/tests/${example}.bytecode" expected_output)
+elseif(CASE STREQUAL "bytecode_empty")
+  file(WRITE "${input}" "")
+  set(arguments --bytecode "${input}")
+  set(expected_output "bytecode\n")
+elseif(CASE STREQUAL "bytecode_numeric_text")
+  file(WRITE "${input}" "int main() { return 9223372036854775808; }\n")
+  set(arguments --bytecode "${input}")
+  set(expected_output [=[bytecode
+function 0 "main" int parameters=0 @1:5
+  constant 0 int "9223372036854775808"
+  0 STEP @1:12
+  1 STEP @1:14
+  2 STEP @1:21
+  3 LOAD_CONSTANT 0 @1:21
+  4 RETURN @1:14
+  5 UNREACHABLE @1:12
+end
+]=])
+elseif(CASE STREQUAL "bytecode_entry_parameters")
+  file(WRITE "${input}" "int main(int n) { return n; }\n")
+  set(arguments --bytecode "${input}")
+  set(expected_output [=[bytecode
+function 0 "main" int parameters=1 @1:5
+  local 0 "n" int @1:14
+  0 STEP @1:17
+  1 STEP @1:19
+  2 STEP @1:26
+  3 LOAD_LOCAL 0 @1:26
+  4 RETURN @1:19
+  5 UNREACHABLE @1:17
+end
+]=])
+elseif(CASE STREQUAL "bytecode_type_error")
+  set(input "${SOURCE_DIR}/examples/type_error.mc")
+  set(arguments --bytecode "${input}")
+  set(expected_exit 1)
+  set(expected_output "")
+  set(expected_error "${input}:3:16: error: Expected type bool. Received int.\n")
+elseif(CASE STREQUAL "bytecode_resolution_error")
+  file(WRITE "${input}" "int main() { return missing; }\n")
+  set(arguments --bytecode "${input}")
+  set(expected_exit 1)
+  set(expected_output "")
+  set(expected_error "${input}:1:21: error: Undeclared name \"missing\".\n")
+elseif(CASE STREQUAL "bytecode_syntax_error")
+  file(WRITE "${input}" "int main( {\n")
+  set(arguments --bytecode "${input}")
+  set(expected_exit 1)
+  set(expected_output "")
+  set(expected_error "${input}:1:11: error: Expected a type. Received LEFT_BRACE.\n")
+elseif(CASE STREQUAL "bytecode_lexical_error")
+  file(WRITE "${input}" "@")
+  set(arguments --bytecode "${input}")
+  set(expected_exit 1)
+  set(expected_output "")
+  set(expected_error "${input}:1:1: error: Unexpected character \"@\".\n")
+elseif(CASE STREQUAL "bytecode_missing_file")
+  file(REMOVE "${input}")
+  set(arguments --bytecode "${input}")
+  set(expected_exit 1)
+  set(expected_output "")
+  set(expected_error "${input}: error: Cannot open file.\n")
+elseif(CASE STREQUAL "bytecode_missing_argument" OR CASE STREQUAL "bytecode_extra_argument")
+  set(arguments --bytecode)
+  if(CASE STREQUAL "bytecode_extra_argument")
+    list(APPEND arguments "${input}" extra)
+  endif()
+  set(expected_exit 1)
+  set(expected_output "")
+  set(expected_error "minic: error: Expected --bytecode <file>. Use --help for usage.\n")
 elseif(CASE STREQUAL "run_hello" OR CASE STREQUAL "run_interpreter" OR CASE STREQUAL "run_short_circuit")
   string(REGEX REPLACE "^run_" "" example "${CASE}")
   set(input "${SOURCE_DIR}/examples/${example}.mc")
@@ -438,6 +514,10 @@ if(CASE STREQUAL "help")
   string(FIND "${output}" "minic --check <file>" check_usage_position)
   if(check_usage_position EQUAL -1)
     message(FATAL_ERROR "Help does not describe the type-check command.")
+  endif()
+  string(FIND "${output}" "minic --bytecode <file>" bytecode_usage_position)
+  if(bytecode_usage_position EQUAL -1)
+    message(FATAL_ERROR "Help does not describe the bytecode command.")
   endif()
   string(FIND "${output}" "minic --run <file>" run_usage_position)
   if(run_usage_position EQUAL -1)

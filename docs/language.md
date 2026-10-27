@@ -609,9 +609,22 @@ The static rules still apply to every function and statement.
 
 Source positions and explicit step markers retain the phase 7 execution contract for the future VM.
 The unary-minus literal case retains two source steps. Assignment targets do not add a separate read or step.
-The planned `--bytecode <file>` command prints deterministic instructions only after compilation succeeds.
+The `--bytecode <file>` command prints deterministic instructions only after compilation succeeds.
 It preserves the existing diagnostic format, returns status `1` without standard output on errors, and leaves earlier commands unchanged.
 VM execution, binary file serialization, and optimizations remain outside phase 8.
+
+From the repository root, operate the bytecode command after the build:
+
+```bash
+./build/minic --bytecode examples/factorial.mc
+./build/minic --bytecode examples/control_flow.mc
+./build/minic --bytecode examples/runtime_error.mc
+```
+
+Each command returns status `0` and prints functions, constants, local slots, and positioned instructions.
+The factorial output includes a recursive `CALL 0`. The control-flow output includes forward branches and a backward loop jump.
+The runtime-error output retains the uninitialized read as `LOAD_LOCAL`, without evaluating it.
+The `--run` command still executes through the tree-walk interpreter and retains all phase 7 limits and diagnostics.
 
 ## Planned language scope
 

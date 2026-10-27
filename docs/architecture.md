@@ -32,6 +32,7 @@ The `--ast` command passes tokens to the parser and prints the complete tree aft
 
 The `--resolve` command also resolves names and prints scopes, symbols, and bindings after the analysis succeeds.
 The `--check` command also analyzes Mini-C types and returns success without printing output.
+The `--bytecode` command analyzes the program, compiles instructions, and prints their disassembly.
 The `--run` command completes static analysis, executes the supported subset, and prints the entry result when it has a value.
 
 ```text
@@ -41,6 +42,7 @@ tokens -> minic::parse -> Program
 Program -> --ast output
 Program -> minic::resolve_names -> NameResolution -> --resolve output
 Program -> minic::check_types -> TypeAnalysis -> --check status
+Program -> minic::compile_bytecode -> BytecodeProgram -> --bytecode output
 Program -> minic::interpret -> Value -> --run output
 ```
 
@@ -64,7 +66,7 @@ The command emits no partial token list on failure.
 
 The `minic_frontend` CMake library contains tokens, the lexer, the parser, the symbol table, name resolution, and type analysis.
 It also contains the AST and resolution printers.
-The `minic` executable links to `minic_runtime`, which depends on `minic_frontend`.
+The `minic` executable links to `minic_runtime` and `minic_bytecode`, which depend on `minic_frontend`.
 Analysis tests link directly to `minic_frontend`, and runtime tests link to `minic_runtime`.
 CTest also runs command tests against the built executable.
 See [tech-stack.md](tech-stack.md) for build and test commands and [language.md](language.md) for lexical rules.
@@ -414,7 +416,7 @@ The default call-depth limit passes the recursive error cases under both sanitiz
 Bytecode is an instruction sequence for the planned stack VM.
 The `minic_bytecode` library owns its format and deterministic printer independently of the interpreter.
 The library provides `BytecodeProgram`, its records, `compile_bytecode`, and `print_bytecode`.
-Command integration remains in the final increment.
+The `--bytecode` command prints the complete disassembly after compilation succeeds.
 
 `BytecodeProgram` owns functions in source order.
 Each function owns its name, return type, source position, local metadata, constants, and instruction vector.
@@ -466,15 +468,23 @@ Arguments enter the stack from left to right before `CALL` consumes them using t
 `RETURN` consumes a result, and `RETURN_VOID` handles explicit returns and implicit void fallthrough.
 Each non-void function ends with `UNREACHABLE` as an internal guard, which the existing conservative return analysis makes unreachable.
 
-Seventeen compiler test groups inspect bindings, constants, jumps, calls, ownership, static errors, and source steps.
+Eighteen compiler test groups inspect bindings, constants, jumps, calls, ownership, static errors, source steps, and existing examples.
 An independent test helper traverses generated control flow with abstract stack types.
 It checks operand indices, branch merges, stack underflow, call signatures, and return types without executing Mini-C values.
 The tests cover both paths of each conditional jump and the backward edges of loops.
+
+Twelve existing examples compile and pass the stack analysis, including factorial, Fibonacci, mutual recursion, and the uninitialized-read example.
+Six exact command fixtures cover hello, calls, control flow, short-circuit logic, factorial, and the runtime-error example.
+The fixtures record source positions, slot indices, constant text, function indices, and jump targets.
+Sixteen command tests cover those fixtures, entry-independent compilation, numeric text, argument errors, and the existing front-end diagnostics.
+The complete suite contains 222 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
 
 The printer numbers functions, constants, locals, and instructions from zero and includes each instruction position.
 It preserves integer digits, prints booleans as `true` or `false`, and uses quoted names.
 It prints structure without executing instructions or validating arbitrary caller-built bytecode.
 Phase 9 retains VM execution and interpreter comparisons. Phase 10 retains optimizations.
+Bytecode compilation and printing still traverse finite C++ structures and retain the existing native-stack limit for deeply nested source.
 
 ## Planned pipeline
 
