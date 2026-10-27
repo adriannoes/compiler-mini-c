@@ -35,6 +35,7 @@ The `--check` command also analyzes Mini-C types and returns success without pri
 The `--bytecode` command analyzes the program, compiles instructions, and prints their disassembly.
 The `--run` command completes static analysis, executes the supported subset, and prints the entry result when it has a value.
 The `--run-vm` command compiles the analyzed program and executes its bytecode through the VM.
+The `--bytecode-opt` and `--run-vm-opt` commands also optimize bytecode before disassembly or execution.
 
 ```text
 source (.mc) -> minic::lex -> tokens
@@ -46,6 +47,7 @@ Program -> minic::check_types -> TypeAnalysis -> --check status
 Program -> minic::compile_bytecode -> BytecodeProgram -> --bytecode output
 Program -> minic::interpret -> Value -> --run output
 Program -> minic::compile_bytecode -> BytecodeProgram -> minic::execute_bytecode -> Value -> --run-vm output
+BytecodeProgram -> minic::optimize_bytecode -> BytecodeProgram -> --bytecode-opt output or --run-vm-opt execution
 ```
 
 `src/token.hpp` defines token types and source positions.
@@ -68,8 +70,8 @@ The command emits no partial token list on failure.
 
 The `minic_frontend` CMake library contains tokens, the lexer, the parser, the symbol table, name resolution, and type analysis.
 It also contains the AST and resolution printers.
-The `minic` executable links to `minic_vm`, which links to `minic_runtime` and `minic_bytecode`.
-Both libraries depend on `minic_frontend`.
+The `minic` executable links to `minic_vm` and `minic_optimizer`.
+Both libraries link to `minic_runtime` and `minic_bytecode`, which depend on `minic_frontend`.
 Analysis tests link directly to `minic_frontend`, and runtime tests link to `minic_runtime`.
 CTest also runs command tests against the built executable.
 See [tech-stack.md](tech-stack.md) for build and test commands and [language.md](language.md) for lexical rules.
@@ -491,7 +493,7 @@ Bytecode compilation and printing still traverse finite C++ structures and retai
 
 ## VM execution
 
-The `minic_vm` library executes compiler-produced bytecode through an iterative instruction loop.
+The `minic_vm` library executes compiler-produced bytecode and its optimized form through an iterative instruction loop.
 It links to `minic_bytecode` and `minic_runtime` and shares the existing numeric helpers and owned `Value` type.
 `ExecutionLimits` lives in `runtime.hpp`, which `interpreter.hpp` still includes. Existing interpreter API calls remain compatible.
 The public API accepts a selected entry and optional positive execution limits, without performing another static analysis.
@@ -544,7 +546,8 @@ The format still defines no binary loader, optimizer, or compatibility version.
 The `minic_optimizer` library links to `minic_bytecode` and `minic_runtime`.
 `optimize_bytecode` copies the input and transforms each function independently.
 It preserves function order, signatures, locals, and source metadata. It adds no external dependency.
-The optimizer provides local constant folding, control-flow cleanup, and small instruction rewrites. Command integration follows in the final increment.
+The optimizer provides local constant folding, control-flow cleanup, and small instruction rewrites.
+The optimized commands compile once, optimize the owned bytecode, and then print or execute the result.
 
 A basic block is an instruction region with one entry.
 The optimizer marks function entry, jump targets, and instructions after jumps or returns as block entries.
@@ -576,10 +579,20 @@ The pipeline repeats local rewrites, jump threading, and reachability cleanup un
 Value rewrites and unreachable cleanup shrink the code, while jump threading resolves chains.
 Every function remains in source order, including functions that no other function calls.
 
-Nineteen optimization test groups cover constants, numeric failures, source steps, block entries, effects, jumps, ownership, and stable repeated optimization.
+Twenty optimization test groups cover constants, numeric failures, source steps, block entries, effects, jumps, ownership, examples, and stable repeated optimization.
 Differential tests compare the interpreter, original VM, and optimized VM for values and exact runtime diagnostics.
 Eight programs at eighty step budgets and three call-depth limits provide 1920 limit combinations.
 Tests also require fewer value instructions in constant expressions and stable results from repeated optimization.
+
+The fixture group compares thirteen examples across the interpreter, original VM, and optimized VM.
+Seven exact disassembly fixtures record optimized instructions, pool indices, source positions, and jump targets.
+Thirty-two optimized execution cases reuse the existing command scenarios and include the new optimization example.
+Fifteen optimized disassembly cases cover fixtures, empty programs, front-end errors, missing files, and argument diagnostics.
+Each command scenario uses a distinct temporary input path across execution engines.
+The optimization example decreases from 69 instructions to 36 and returns `24` in all three engines.
+The instruction counts describe code reduction without a timing measurement.
+The complete suite contains 350 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The prose scan reports no findings. The build commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
 
 Reachability asks whether control flow can visit an instruction.
 Liveness asks whether later code can read a value before another assignment replaces it.

@@ -1,5 +1,6 @@
 #include "ast_printer.hpp"
 #include "bytecode_compiler.hpp"
+#include "bytecode_optimizer.hpp"
 #include "interpreter.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
@@ -25,16 +26,20 @@ void print_usage() {
       << "  minic --resolve <file>\n"
       << "  minic --check <file>\n"
       << "  minic --bytecode <file>\n"
+      << "  minic --bytecode-opt <file>\n"
       << "  minic --run <file>\n"
       << "  minic --run-vm <file>\n"
+      << "  minic --run-vm-opt <file>\n"
       << "\n"
       << "Print token types, source text, and line:column positions.\n"
       << "Use --ast to print the syntax tree.\n"
       << "Use --resolve to print scopes, symbols, and name bindings.\n"
       << "Use --check to analyze Mini-C types.\n"
       << "Use --bytecode to print Mini-C instructions.\n"
+      << "Use --bytecode-opt to print optimized Mini-C instructions.\n"
       << "Use --run to execute Mini-C programs.\n"
-      << "Use --run-vm to compile and execute Mini-C on the VM.\n";
+      << "Use --run-vm to compile and execute Mini-C on the VM.\n"
+      << "Use --run-vm-opt to optimize and execute Mini-C on the VM.\n";
 }
 
 }  // namespace
@@ -54,8 +59,18 @@ int main(int argc, char** argv) {
   const bool run_mode = argc >= 2 && std::string(argv[1]) == "--run";
   const bool bytecode_mode = argc >= 2 && std::string(argv[1]) == "--bytecode";
   const bool vm_mode = argc >= 2 && std::string(argv[1]) == "--run-vm";
+  const bool optimized_bytecode_mode = argc >= 2 && std::string(argv[1]) == "--bytecode-opt";
+  const bool optimized_vm_mode = argc >= 2 && std::string(argv[1]) == "--run-vm-opt";
   if (argc != 3 || (!ast_mode && !resolve_mode && !check_mode && !run_mode && !bytecode_mode && !vm_mode &&
-                    std::string(argv[1]) != "--tokens")) {
+                    !optimized_bytecode_mode && !optimized_vm_mode && std::string(argv[1]) != "--tokens")) {
+    if (optimized_bytecode_mode) {
+      std::cerr << "minic: error: Expected --bytecode-opt <file>. Use --help for usage.\n";
+      return 1;
+    }
+    if (optimized_vm_mode) {
+      std::cerr << "minic: error: Expected --run-vm-opt <file>. Use --help for usage.\n";
+      return 1;
+    }
     if (vm_mode) {
       std::cerr << "minic: error: Expected --run-vm <file>. Use --help for usage.\n";
       return 1;
@@ -112,16 +127,29 @@ int main(int argc, char** argv) {
     } else if (check_mode) {
       const auto program = minic::parse(tokens);
       minic::check_types(program);
-    } else if (run_mode || vm_mode) {
+    } else if (run_mode || vm_mode || optimized_vm_mode) {
       const auto program = minic::parse(tokens);
-      const auto value = vm_mode ? minic::execute_bytecode(minic::compile_bytecode(program)) : minic::interpret(program);
+      minic::Value value;
+      if (run_mode) {
+        value = minic::interpret(program);
+      } else {
+        auto bytecode = minic::compile_bytecode(program);
+        if (optimized_vm_mode) {
+          bytecode = minic::optimize_bytecode(bytecode);
+        }
+        value = minic::execute_bytecode(bytecode);
+      }
       const auto text = minic::format_value(value);
       if (!text.empty()) {
         std::cout << text << '\n';
       }
-    } else if (bytecode_mode) {
+    } else if (bytecode_mode || optimized_bytecode_mode) {
       const auto program = minic::parse(tokens);
-      std::cout << minic::print_bytecode(minic::compile_bytecode(program));
+      auto bytecode = minic::compile_bytecode(program);
+      if (optimized_bytecode_mode) {
+        bytecode = minic::optimize_bytecode(bytecode);
+      }
+      std::cout << minic::print_bytecode(bytecode);
     } else {
       for (const auto& token : tokens) {
         std::cout << token.location.line << ':' << token.location.column << ' '

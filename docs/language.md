@@ -633,7 +633,7 @@ The API is `Value execute_bytecode(const BytecodeProgram&, const std::string& en
 The overload `execute_bytecode(program, entry, limits)` accepts the shared `ExecutionLimits` type.
 The VM executes entries, expressions, local slots, branches, loops, calls, and returns.
 
-The API accepts compiler-produced bytecode and performs no AST analysis during execution.
+The API accepts compiler-produced bytecode and its optimized form, and performs no AST analysis during execution.
 The bytecode remains unchanged and supports repeated execution with independent runtime state.
 The result owns its data. Missing entries and entries with parameters retain the interpreter diagnostics and source positions.
 The entry defaults to `main` and requires zero parameters.
@@ -698,10 +698,28 @@ The optimizer does not remove variable reads or apply identities that can suppre
 The optimizer simplifies constant branches, removes unreachable code, and applies small local instruction rewrites.
 Those transformations respect block entries and remap absolute jump targets after code removal.
 Unreachable source steps can disappear because execution never visits them.
-Discarding a known constant is safe only when its conversion succeeds. Discarded calls and variable reads retain their original behavior.
+Discarding a known constant is safe only when its conversion succeeds.
+The optimizer preserves calls and variable reads even when later code discards their result.
 Functions remain available as named entries even when the selected entry never calls them.
-The planned `--bytecode-opt` and `--run-vm-opt` commands will expose optimized output and execution separately from the existing commands.
+The `--bytecode-opt` and `--run-vm-opt` commands expose optimized output and execution separately from the existing commands.
 Global constant propagation, store elimination, language changes, and binary serialization remain outside this phase.
+
+The optimized commands complete parsing, static analysis, and compilation before optimization starts.
+`--bytecode-opt` accepts programs without an entry, prints the optimized disassembly, and performs no execution.
+`--run-vm-opt` selects `main` without parameters, uses the default execution limits, and retains the existing output and error rules.
+The API can execute optimized bytecode through `execute_bytecode` with a selected entry and custom limits.
+
+From the repository root, operate the optimized commands after the build:
+
+```bash
+./build/minic --bytecode-opt examples/optimization.mc
+./build/minic --run-vm-opt examples/optimization.mc
+./build/minic --run-vm-opt examples/runtime_error.mc
+```
+
+The optimization example prints `24` and returns status `0`. Its code decreases from 69 instructions to 36.
+The runtime-error example retains its diagnostic at line 3, column 15, with status `1` and no standard output.
+Constant pools retain unused entries. Optimization preserves function indices, local metadata, and source positions for instructions that remain.
 
 ## Planned language scope
 

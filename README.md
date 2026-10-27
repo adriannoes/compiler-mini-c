@@ -85,7 +85,7 @@ The [VM rules](docs/language.md#phase-9-vm-rules) define the approved execution 
 
 Phase 10 provides `minic::optimize_bytecode`, local constant folding, unreachable-code cleanup, and small instruction rewrites in owned bytecode.
 The [optimization rules](docs/language.md#phase-10-optimization-rules) preserve source steps, numeric failures, effects, and the original input.
-Optimized commands remain in progress.
+The `--bytecode-opt` command prints optimized instructions, and `--run-vm-opt` executes them on the VM.
 
 ## Build and use
 
@@ -113,6 +113,8 @@ cmake --build build
 ./build/minic --run examples/fibonacci.mc
 ./build/minic --run-vm examples/factorial.mc
 ./build/minic --run-vm examples/fibonacci.mc
+./build/minic --bytecode-opt examples/optimization.mc
+./build/minic --run-vm-opt examples/optimization.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -232,6 +234,17 @@ Only source steps consume the budget. The VM uses explicit frames, so recursive 
 The API accepts custom limits through `execute_bytecode(bytecode, entry, limits)` and returns a value independent of the bytecode lifetime.
 The existing `--run` command continues to use the tree-walk interpreter.
 
+The [optimization example](examples/optimization.mc) combines constant expressions, a known branch, a discarded value, and code after a return.
+It prints `24` through `--run`, `--run-vm`, and `--run-vm-opt`, with process status `0`.
+Optimization reduces its instruction sequence from 69 instructions to 36 while preserving every executed source step.
+These counts describe generated code, without a timing claim.
+The complete outputs live in [the original fixture](tests/optimization.bytecode) and [the optimized fixture](tests/optimization.optimized.bytecode).
+
+Optimization preserves error positions, argument order, calls, local reads, and the configured execution limits.
+It retains operations that can fail when execution reaches them. It can omit operations on paths that execution never reaches.
+The optimizer retains unused pool constants and every function signature, so named entry selection remains available.
+The existing disassembly and execution commands keep their original behavior.
+
 ## Tests
 
 After the build, run the tests from the repository root:
@@ -240,10 +253,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 299 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, and commands.
+The 350 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-The 280 tests from phase 9 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+All 350 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -276,7 +289,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 7 | Functions and control flow | done |
 | 8 | Bytecode compiler | done |
 | 9 | VM (stage B, primary target) | done |
-| 10 | Local optimizations | in progress |
+| 10 | Local optimizations | done |
 | 11 | Optional language features | pending |
 | 12 | LLVM literacy | pending |
 | 13 | Wrap-up / portfolio polish | pending |
@@ -288,4 +301,5 @@ Phase 6 executes the expression and block subset through `--run`.
 Phase 7 adds calls, control flow, and recursion before bytecode and VM work.
 Phase 8 compiles the same language to inspectable bytecode.
 Phase 9 executes bytecode with explicit frames and compares its results and diagnostics with the interpreter.
+Phase 10 optimizes bytecode with guarded constant folding and local control-flow cleanup.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

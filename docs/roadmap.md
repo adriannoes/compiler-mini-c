@@ -352,7 +352,7 @@ Lookup terms: `virtual machine`, `stack machine`, `fetch-decode-execute`, `instr
 
 ## Phase 10: Local optimizations
 
-Status: in progress.
+Status: complete.
 
 The approved rules live in [language.md](language.md#phase-10-optimization-rules).
 Pass ownership and block boundaries live in [architecture.md](architecture.md#local-bytecode-optimization).
@@ -369,15 +369,22 @@ The tests compare 1920 combinations of source programs and execution limits acro
 Increment 2 adds constant branches, unreachable-code cleanup, discarded constants, jump threading, and redundant-jump cleanup.
 Nine additional test groups cover control flow, preserved reads and calls, entry selection, loop budgets, and stable repeated optimization.
 All functions and local metadata remain available. Only unreachable steps can disappear.
-Command integration and final validation remain pending.
+
+Increment 3 adds `--bytecode-opt`, `--run-vm-opt`, an optimization example, and exact disassembly fixtures.
+An additional API group compares thirteen examples across the interpreter and both VM paths.
+Thirty-two optimized execution cases and fifteen optimized disassembly cases cover output, diagnostics, entry rules, and execution limits.
+The optimization example returns `24` and decreases from 69 instructions to 36.
+All 350 tests pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings.
+The prose scan reports no findings. Global constant propagation, store elimination, and language changes remain outside this phase.
 
 Lookup terms: `constant folding`, `constant propagation`, `dead code elimination`, `unreachable code`, `peephole optimization`, `local optimization`, `basic block`, `data-flow analysis`, `liveness analysis`
 
 - [x] Constant folding (bytecode)
 - [x] Trivial dead-code / unreachable cleanup where easy
 - [x] Small peep-hole passes on bytecode
-- [ ] Tests that optimized and unoptimized runs agree
+- [x] Tests that optimized and unoptimized runs agree
 - [x] Optional stretch: reachability and liveness notes, without a liveness implementation
+- [x] Final normal and sanitizer validation
 
 ## Phase 11: Optional language features (pick 1-2)
 

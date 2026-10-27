@@ -6,7 +6,9 @@
 #include "vm.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <optional>
 #include <string_view>
 
@@ -282,9 +284,34 @@ void idempotence() {
   }
 }
 
+void fixtures(const std::string& directory) {
+  for (const std::string name : {"hello", "lexer", "calls", "control_flow", "scopes", "recursion", "types",
+                                 "interpreter", "short_circuit", "runtime_error", "factorial", "fibonacci", "optimization"}) {
+    std::ifstream input(directory + "/" + name + ".mc", std::ios::binary);
+    require(input.is_open(), "Cannot open the example " + name + ".");
+    std::string source{std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+    if (name == "control_flow") {
+      source += "\nint main() { return choose(true, false); }\n";
+    } else if (name == "recursion") {
+      source += "\nbool main() { return even(10) && odd(9); }\n";
+    }
+    compare(source);
+  }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
+  if (argc == 3 && std::string_view(argv[1]) == "fixtures") {
+    try {
+      fixtures(argv[2]);
+      std::cout << "PASS fixtures\n";
+      return 0;
+    } catch (const std::exception& error) {
+      std::cerr << "FAIL fixtures: " << error.what() << '\n';
+      return 1;
+    }
+  }
   const struct { const char* name; void (*run)(); } cases[] = {
       {"empty", empty}, {"integer_folding", integer_folding}, {"boolean_folding", boolean_folding},
       {"numeric_guards", numeric_guards}, {"step_markers", step_markers}, {"block_boundaries", block_boundaries},

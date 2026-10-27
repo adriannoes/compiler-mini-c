@@ -36,7 +36,7 @@ add_library(minic_optimizer src/bytecode_optimizer.cpp)
 target_link_libraries(minic_optimizer PUBLIC minic_bytecode minic_runtime)
 
 add_executable(minic src/main.cpp)
-target_link_libraries(minic PRIVATE minic_vm)
+target_link_libraries(minic PRIVATE minic_vm minic_optimizer)
 
 include(CTest)
 
@@ -51,6 +51,7 @@ if(BUILD_TESTING)
   endforeach()
   set_tests_properties(optimization.differential_limits PROPERTIES TIMEOUT 30)
   set_tests_properties(optimization.loop_limits PROPERTIES TIMEOUT 10)
+  add_test(NAME optimization.fixtures COMMAND minic_optimizer_tests fixtures "${CMAKE_CURRENT_SOURCE_DIR}/examples")
 
   add_executable(minic_vm_tests tests/vm_test.cpp)
   target_link_libraries(minic_vm_tests PRIVATE minic_vm)
@@ -173,7 +174,8 @@ if(BUILD_TESTING)
                         bytecode_calls bytecode_empty bytecode_runtime_error bytecode_numeric_text
                         bytecode_entry_parameters bytecode_type_error bytecode_resolution_error
                         bytecode_syntax_error bytecode_lexical_error bytecode_missing_file
-                        bytecode_missing_argument bytecode_extra_argument)
+                        bytecode_missing_argument bytecode_extra_argument
+                        run_optimization bytecode_optimization)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"
@@ -183,13 +185,25 @@ if(BUILD_TESTING)
         -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_test.cmake"
     )
     if(case MATCHES "^run_")
-      string(REGEX REPLACE "^run_" "vm_" vm_case "${case}")
-      add_test(NAME cli.${vm_case}
+      foreach(engine IN ITEMS vm opt)
+        string(REGEX REPLACE "^run_" "${engine}_" engine_case "${case}")
+        add_test(NAME cli.${engine_case}
+          COMMAND ${CMAKE_COMMAND}
+            "-DMINIC=$<TARGET_FILE:minic>"
+            "-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+            "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/test-data"
+            "-DCASE=${engine_case}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_test.cmake"
+        )
+      endforeach()
+    elseif(case MATCHES "^bytecode_" AND NOT case STREQUAL "bytecode_numeric_text" AND NOT case STREQUAL "bytecode_entry_parameters")
+      string(REGEX REPLACE "^bytecode_" "bytecode_opt_" optimized_case "${case}")
+      add_test(NAME cli.${optimized_case}
         COMMAND ${CMAKE_COMMAND}
           "-DMINIC=$<TARGET_FILE:minic>"
           "-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
           "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/test-data"
-          "-DCASE=${vm_case}"
+          "-DCASE=${optimized_case}"
           -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_test.cmake"
       )
     endif()
@@ -198,4 +212,6 @@ if(BUILD_TESTING)
   set_tests_properties(cli.run_call_depth PROPERTIES TIMEOUT 10)
   set_tests_properties(cli.vm_step_limit PROPERTIES TIMEOUT 30)
   set_tests_properties(cli.vm_call_depth PROPERTIES TIMEOUT 10)
+  set_tests_properties(cli.opt_step_limit PROPERTIES TIMEOUT 30)
+  set_tests_properties(cli.opt_call_depth PROPERTIES TIMEOUT 10)
 endif()
