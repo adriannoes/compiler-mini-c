@@ -418,7 +418,7 @@ Lookup terms (by choice): `array`, `struct`, `record`, `garbage collection`, `ma
 
 ## Phase 12: LLVM literacy (conversation fluency)
 
-Status: in progress. This phase studies LLVM through a separate C laboratory with the installed Clang.
+Status: complete. This phase studies LLVM through a separate C laboratory with the installed Clang.
 
 Notes: [theory-llvm.md](theory-llvm.md).
 The approved boundary lives in [language.md](language.md#phase-12-llvm-study-boundary).
@@ -435,14 +435,19 @@ Standalone `opt` and `llc` are unavailable on this host's `PATH`, so their execu
 Increment 2 adds the C loop and driver, two reference IR files, and a separate CMake laboratory command.
 All four native checks pass five bounded cases each, print `10`, and return status 0 without compiler warnings.
 The IR examples record Apple Clang 17.0.0 and target `arm64-apple-macosx15.0.0`.
+Increment 3 annotates both IR forms, traces the loop's `phi` selections by hand, and adds the interview explanation.
+The final normal build passes all 398 tests, and the four laboratory executions pass their five cases each.
+The build and laboratory compile without warnings. The prose scan reports no findings, and local documentation links resolve.
+The compiler sources and CMake targets remain unchanged. Standalone tool experiments remain optional and deferred.
 
 Lookup terms: `LLVM IR`, `SSA`, `static single assignment`, `basic block`, `phi node`, `pass`, `pass manager`, `clang`, `opt`, `llc`, `code generation`, `target triple`
 
 - [x] Map our pipeline stages onto Clang/LLVM vocabulary (front end, IR, passes, codegen)
-- [ ] Read a small C snippet's LLVM IR (`clang -S -emit-llvm`) and annotate it
-- [ ] Optional thin experiment: emit a tiny subset to LLVM IR or walk an existing `.ll` file through `opt`/`llc`
-- [ ] Write a short "how I would explain LLVM in an interview" section in [theory-llvm.md](theory-llvm.md)
+- [x] Read a small C snippet's LLVM IR (`clang -S -emit-llvm`) and annotate it
+- [ ] Optional thin experiment with `opt`/`llc` or an LLVM emitter (deferred outside the approved C laboratory)
+- [x] Write a short "how I would explain LLVM in an interview" section in [theory-llvm.md](theory-llvm.md)
 - [x] Explicit non-goal: production Clang/MLIR engineering depth
+- [x] Reproducible C/IR laboratory, native result checks, and final compiler regression tests
 
 ## Phase 13: Wrap-up
 

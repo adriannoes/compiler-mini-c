@@ -103,6 +103,8 @@ A separate file defines that function and checks small, bounded inputs.
 Separate compilation keeps a call visible for the IR reading exercise without compiler-specific function attributes.
 
 The comparison uses `-O0` and `-O1`, followed by native execution from both C and generated IR.
+The `-O0` level disables most optimization, while `-O1` enables an optimization pipeline.
+The `-fno-discard-value-names` flag retains descriptive IR names for the reading exercise.
 The committed IR examples record one compiler and target. Generated names and instruction layouts can differ with another compiler version.
 The exercise compares observed structures and results instead of requiring identical IR text on every host.
 
@@ -185,4 +187,106 @@ All four native executions pass the five cases without warnings, print `10`, and
 
 The O0 function uses three `alloca` instructions and explicit loads and stores.
 The O1 function uses no `alloca` and contains three `phi` instructions.
-Both contain one call to `next`. The annotated reading and interview explanation follow in the final increment.
+Both contain one call to `next`.
+
+## Read the O0 IR
+
+The [O0 reference](../examples/llvm/sum.O0.ll) has four blocks: `entry`, `while.cond`, `while.body`, and `while.end`.
+The module declares `next` because its definition lives in the separately compiled driver.
+The `i32` type records a 32-bit integer for this host's C `int`.
+
+```llvm
+entry:
+  %limit.addr = alloca i32, align 4
+  %total = alloca i32, align 4
+  %index = alloca i32, align 4
+  store i32 %limit, ptr %limit.addr, align 4
+  store i32 0, ptr %total, align 4
+  store i32 0, ptr %index, align 4
+  br label %while.cond
+```
+
+The three addresses remain named SSA values, while their stored contents can change.
+The condition block loads `index` and `limit`, compares them with `icmp slt`, and branches on the resulting `i1` value.
+The `slt` predicate means signed less than, and `i1` holds the comparison result.
+The body calls `next`, adds its result to the total, updates the index, and returns to the condition block.
+The exit block loads and returns the final total.
+
+The following graph describes the O0 reference blocks:
+
+```mermaid
+flowchart TD
+  entry --> condition[while.cond]
+  condition -->|index less than limit| body[while.body]
+  condition -->|otherwise| exit[while.end]
+  body --> condition
+```
+
+## Read the O1 IR
+
+The [O1 reference](../examples/llvm/sum.O1.ll) has three blocks: `entry`, `while.body`, and `while.end`.
+The entry block tests whether the limit is positive. A nonpositive limit skips the loop and returns zero.
+The loop keeps its index and accumulated total as values instead of local memory accesses.
+
+```llvm
+while.body:                                       ; preds = %entry, %while.body
+  %index.07 = phi i32 [ %add1, %while.body ], [ 0, %entry ]
+  %total.06 = phi i32 [ %add, %while.body ], [ 0, %entry ]
+  %call = tail call i32 @next(i32 noundef %index.07) #2
+  %add = add nsw i32 %call, %total.06
+  %add1 = add nuw nsw i32 %index.07, 1
+  %exitcond.not = icmp eq i32 %add1, %limit
+  br i1 %exitcond.not, label %while.end, label %while.body, !llvm.loop !6
+```
+
+For `%index.07`, entry from `%entry` selects `0`. Entry from `%while.body` selects the preceding iteration's `%add1`.
+The `%total.06` selection follows the same pattern, with zero initially and `%add` after an iteration.
+Each named value has one definition in the IR, although control can revisit that definition.
+These names identify IR values rather than physical CPU registers.
+
+For `limit = 4`, the loop values follow this calculation:
+
+| Body visit | `%index.07` | `%total.06` | `%call` | `%add` |
+|-----------:|------------:|------------:|--------:|-------:|
+| 1 | 0 | 0 | 1 | 1 |
+| 2 | 1 | 1 | 2 | 3 |
+| 3 | 2 | 3 | 3 | 6 |
+| 4 | 3 | 6 | 4 | 10 |
+
+The final `%add1` equals the limit, so the branch transfers control to `while.end`.
+Its `%total.0.lcssa` selects `%add` from the loop body or zero from the entry block.
+The return therefore produces `10` for this input and `0` for the driver's nonpositive inputs.
+This table interprets the recorded IR with the driver's `next` definition, rather than an instruction trace captured during execution.
+
+## Semantic limits
+
+The `nsw` flag promises no signed wrap. On signed overflow, the flagged addition produces a poison value instead of a Mini-C error.
+The [addition contract](https://llvm.org/docs/LangRef.html#add-instruction) defines that behavior.
+A poison value represents deferred undefined behavior and can propagate through other instructions.
+The [LLVM undefined-behavior manual](https://llvm.org/docs/UndefinedBehavior.html#poison-values) describes its consequences.
+It does not provide the positioned numeric diagnostics that Mini-C implements.
+
+The small driver inputs avoid C signed overflow, which [Clang classifies as undefined behavior](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html#introduction).
+They demonstrate the C and IR paths for this example. They do not compare every possible C input with Mini-C execution.
+The laboratory also has no Mini-C array checks, source-step accounting, or call-depth limits.
+
+The O0 reference contains the [`optnone` attribute](https://llvm.org/docs/LangRef.html#function-attributes), which suppresses most optimization of that function.
+An optional future `opt` experiment needs an input and toolchain that permit the intended pass.
+The completed experiment uses the tested Clang `-O0` and `-O1` pipelines.
+Standalone `opt` and `llc` execution remains deferred. The source C files, rather than the target-specific reference IR, support regeneration on another host.
+
+## Interview explanation
+
+My Mini-C project has a manual front end, a tree-walk interpreter, and a compiler for a custom bytecode VM.
+I implemented local optimization passes and checked arrays, then studied how those responsibilities map to Clang and LLVM.
+LLVM IR separates source analysis from optimization and target code generation.
+I compared Clang output at `-O0` and `-O1`, followed loop values and `phi` selections, and compiled the IR into native programs.
+My implementation target is the bytecode VM. My LLVM work in this project covers IR reading and a reproducible C laboratory.
+
+## Completion evidence
+
+The normal compiler build passes all 398 CTest cases without compiler warnings.
+The independent laboratory passes four native executions, each with five bounded cases, exact output, and exit-status checks.
+The prose scan reports no findings, and local documentation links resolve.
+The compiler sources and CMake targets retain their phase 11 contents.
+The phase 11 sanitizer baseline remains separate from the phase 12 laboratory results.

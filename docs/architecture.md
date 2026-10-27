@@ -658,6 +658,9 @@ The [LLVM notes](theory-llvm.md#pipeline-map) map the implemented stages to Clan
 The phase 12 laboratory compiles separate C sources with the host Clang.
 It does not consume the Mini-C AST or bytecode and does not link LLVM libraries into the project.
 This boundary permits an IR experiment without a second implementation of Mini-C runtime contracts.
+The separate laboratory generates LLVM IR at `-O0` and `-O1`, then compiles both C and IR paths into native executables.
+Its four native checks exercise five bounded cases each and preserve the existing 398 compiler tests.
+The [annotated IR](theory-llvm.md#read-the-o0-ir) connects stack storage, control-flow blocks, calls, and SSA values to concrete generated instructions.
 
 ## Planned pipeline
 

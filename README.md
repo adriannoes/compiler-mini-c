@@ -92,6 +92,9 @@ Lengths range from 1 through 1024, and brackets add two token types for a total 
 The [array rules](docs/language.md#phase-11-local-arrays) define bounds, initialization, and indexed assignment order.
 The interpreter, VM, and optimized VM execute indexed reads and writes with bounds and missing-value diagnostics.
 
+Phase 12 maps those stages to Clang/LLVM and supplies a separate C/IR laboratory with annotated examples.
+The [LLVM notes](docs/theory-llvm.md) explain SSA, control-flow blocks, pass pipelines, tool roles, and the limits of this experiment.
+
 ## Build and use
 
 From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
@@ -332,7 +335,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 9 | VM (stage B, primary target) | done |
 | 10 | Local optimizations | done |
 | 11 | Optional language features | done |
-| 12 | LLVM literacy | in progress |
+| 12 | LLVM literacy | done |
 | 13 | Wrap-up / portfolio polish | pending |
 
 Phase 2 delivers syntax and AST output, and phase 3 records the related theory.
@@ -344,4 +347,5 @@ Phase 8 compiles the same language to inspectable bytecode.
 Phase 9 executes bytecode with explicit frames and compares its results and diagnostics with the interpreter.
 Phase 10 optimizes bytecode with guarded constant folding and local control-flow cleanup.
 Phase 11 adds local arrays with checked indices and independent storage for each function activation.
+Phase 12 records LLVM concepts and a reproducible C/IR laboratory with native result checks.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

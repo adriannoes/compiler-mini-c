@@ -99,6 +99,8 @@ cmake -P tests/llvm_lab.cmake
 The command generates IR and checks four native executions under ignored `build-llvm-lab/`.
 The laboratory does not register CTest cases or change the compiler build dependencies.
 The [LLVM notes](theory-llvm.md#reproduce-the-laboratory) record prerequisites, manual commands, reference IR, and expected results.
+The phase 12 checks pass all 398 compiler tests and four laboratory executions without compiler warnings.
+The recorded laboratory uses Apple Clang 17.0.0 (`clang-1700.6.4.2`).
 
 ## Sanitizer validation
 
