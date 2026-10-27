@@ -1,4 +1,5 @@
 #include "ast_printer.hpp"
+#include "interpreter.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "resolution_printer.hpp"
@@ -21,11 +22,13 @@ void print_usage() {
       << "  minic --ast <file>\n"
       << "  minic --resolve <file>\n"
       << "  minic --check <file>\n"
+      << "  minic --run <file>\n"
       << "\n"
       << "Print token types, source text, and line:column positions.\n"
       << "Use --ast to print the syntax tree.\n"
       << "Use --resolve to print scopes, symbols, and name bindings.\n"
-      << "Use --check to analyze Mini-C types.\n";
+      << "Use --check to analyze Mini-C types.\n"
+      << "Use --run to execute the supported Mini-C subset.\n";
 }
 
 }  // namespace
@@ -42,7 +45,12 @@ int main(int argc, char** argv) {
   const bool ast_mode = argc >= 2 && std::string(argv[1]) == "--ast";
   const bool resolve_mode = argc >= 2 && std::string(argv[1]) == "--resolve";
   const bool check_mode = argc >= 2 && std::string(argv[1]) == "--check";
-  if (argc != 3 || (!ast_mode && !resolve_mode && !check_mode && std::string(argv[1]) != "--tokens")) {
+  const bool run_mode = argc >= 2 && std::string(argv[1]) == "--run";
+  if (argc != 3 || (!ast_mode && !resolve_mode && !check_mode && !run_mode && std::string(argv[1]) != "--tokens")) {
+    if (run_mode) {
+      std::cerr << "minic: error: Expected --run <file>. Use --help for usage.\n";
+      return 1;
+    }
     if (check_mode) {
       std::cerr << "minic: error: Expected --check <file>. Use --help for usage.\n";
       return 1;
@@ -87,6 +95,13 @@ int main(int argc, char** argv) {
     } else if (check_mode) {
       const auto program = minic::parse(tokens);
       minic::check_types(program);
+    } else if (run_mode) {
+      const auto program = minic::parse(tokens);
+      const auto value = minic::interpret(program);
+      const auto text = minic::format_value(value);
+      if (!text.empty()) {
+        std::cout << text << '\n';
+      }
     } else {
       for (const auto& token : tokens) {
         std::cout << token.location.line << ':' << token.location.column << ' '
@@ -107,6 +122,10 @@ int main(int argc, char** argv) {
               << error.location.column << ": error: " << error.what() << '\n';
     return 1;
   } catch (const minic::TypeError& error) {
+    std::cerr << path << ':' << error.location.line << ':'
+              << error.location.column << ": error: " << error.what() << '\n';
+    return 1;
+  } catch (const minic::RuntimeError& error) {
     std::cerr << path << ':' << error.location.line << ':'
               << error.location.column << ": error: " << error.what() << '\n';
     return 1;

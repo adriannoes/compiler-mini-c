@@ -32,6 +32,7 @@ The `--ast` command passes tokens to the parser and prints the complete tree aft
 
 The `--resolve` command also resolves names and prints scopes, symbols, and bindings after the analysis succeeds.
 The `--check` command also analyzes Mini-C types and returns success without printing output.
+The `--run` command completes static analysis, executes the supported subset, and prints the entry result when it has a value.
 
 ```text
 source (.mc) -> minic::lex -> tokens
@@ -40,6 +41,7 @@ tokens -> minic::parse -> Program
 Program -> --ast output
 Program -> minic::resolve_names -> NameResolution -> --resolve output
 Program -> minic::check_types -> TypeAnalysis -> --check status
+Program -> minic::interpret -> Value -> --run output
 ```
 
 `src/token.hpp` defines token types and source positions.
@@ -62,7 +64,8 @@ The command emits no partial token list on failure.
 
 The `minic_frontend` CMake library contains tokens, the lexer, the parser, the symbol table, name resolution, and type analysis.
 It also contains the AST and resolution printers.
-Both `minic` and the unit tests link to that library.
+The `minic` executable links to `minic_runtime`, which depends on `minic_frontend`.
+Analysis tests link directly to `minic_frontend`, and runtime tests link to `minic_runtime`.
 CTest also runs command tests against the built executable.
 See [tech-stack.md](tech-stack.md) for build and test commands and [language.md](language.md) for lexical rules.
 
@@ -331,9 +334,11 @@ The public call accepts temporary programs because its returned value contains n
 Repeated calls create fresh analysis and environment state without changing the source tree.
 No interpreter instance or environment escapes the call.
 
-The final increment will add `--run <file>` and examples within the phase 6 subset.
-Calls and control flow will remain phase 7 work, with explicit errors for reached unsupported nodes.
-The existing analysis modes will not invoke the runtime library.
+`--run <file>` uses `main` as its entry and formats the returned value only after execution succeeds.
+An integer or boolean result ends with a newline, while a `void` result prints nothing.
+The process status remains `0` on success, independently of the entry result, and becomes `1` on failure.
+Calls and control flow remain phase 7 work, with explicit errors for reached unsupported nodes.
+The existing analysis modes do not invoke execution.
 
 ## Interpreter learning note
 
@@ -341,6 +346,23 @@ A lexical binding identifies a declaration, while an environment stores the valu
 Separate symbol identifiers preserve shadowing even when a declaration appears after an earlier use of an outer variable.
 Explicit missing-value state reports uninitialized reads without changing static name or type analysis.
 Return propagation and block cleanup define execution order without requiring function-call frames in phase 6.
+
+## Interpreter validation and limits
+
+Phase 6 adds six numeric test groups, sixteen interpreter API groups, and twenty-one command tests.
+The complete suite contains 162 CTest tests, including the original token, AST, resolution, and type-analysis contracts.
+All 162 pass in both normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
+
+The API tests cover numeric boundaries, missing values, lexical bindings, evaluation order, skipped nodes, return propagation, and static error priority.
+They also cover repeated execution, AST preservation, and returned values that outlive temporary programs.
+Command tests compare exact result text, empty void output, positioned diagnostics, and process exit codes.
+The runtime-error example passes `--check` and fails with the expected uninitialized-read diagnostic in `--run`.
+
+The runtime requires an entry without parameters and reports reached calls, `if`, and `while` as unsupported.
+Those nodes retain their static-analysis support and await phase 7 execution.
+The interpreter does not implement function frames, recursion, bytecode, or VM behavior.
+Recursive AST traversal remains limited by the available C++ call stack.
 
 ## Planned pipeline
 

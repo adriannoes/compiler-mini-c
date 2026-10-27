@@ -213,7 +213,7 @@ Lookup terms: `semantic analysis`, `type checking`, `type system`, `type environ
 
 ## Phase 6: Tree-walk interpreter (stage A)
 
-Status: in progress.
+Status: complete within the approved expression and block subset.
 
 The approved subset and runtime policies live in [language.md](language.md#phase-6-execution-rules).
 Ownership and library boundaries live in [architecture.md](architecture.md#runtime-values-and-interpreter-design).
@@ -231,15 +231,20 @@ Six new test groups cover value formatting, literal limits, arithmetic, overflow
 Increment 2 is complete: `interpret` evaluates the supported AST subset and returns owned values from a selected entry.
 Sixteen API test groups cover evaluation order, short-circuit logic, assignments, scope bindings, missing values, returns, and numeric errors.
 They also cover entry selection, unsupported nodes, skipped nodes, static error priority, repeated execution, and result ownership.
-The command and final sanitizer validation remain pending. Phase 6 is not complete.
+
+Increment 3 is complete: `--run` prints integer or boolean results, keeps void output empty, and returns status `0` on success.
+The interpreter and short-circuit examples execute successfully, and the runtime-error example demonstrates an uninitialized read after successful static analysis.
+Twenty-one new command tests cover result formatting, runtime errors, entry rules, unsupported nodes, stage priority, files, and arguments.
+All 162 tests pass in both normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings.
+The prose scan reports no findings. Phase 7 retains calls, control flow, frames, and recursion.
 
 Lookup terms: `interpreter`, `tree-walk interpreter`, `evaluation`, `operational semantics`, `environment`, `dynamic error`
 
 - [x] Runtime values and numeric operations
 - [x] Evaluate supported AST nodes directly
-- [ ] Run phase 6 examples end to end
+- [x] Run phase 6 examples end to end
 - [x] Interpreter tests
-- [ ] Final normal and sanitizer validation
+- [x] Final normal and sanitizer validation
 
 ## Phase 7: Functions and control flow
 

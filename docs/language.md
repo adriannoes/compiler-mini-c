@@ -435,7 +435,7 @@ An empty program also succeeds because the checker does not require `main`.
 The phase 6 interpreter evaluates expressions, declarations, assignments, blocks, empty statements, and returns.
 Function calls, `if`, and `while` remain in phase 7.
 Reaching an unsupported node produces a runtime error.
-The value library and `interpret` API are available. The execution command remains pending.
+The value library, `interpret` API, and `--run` command provide this subset.
 
 ### Values and numeric limits
 
@@ -495,11 +495,38 @@ It analyzes the supplied program and executes the selected entry without paramet
 The returned value owns its data and remains valid after the AST expires.
 The call does not change the AST or reuse caller-supplied analysis from another program.
 
-The planned `--run <file>` command will use `main` as its entry.
-It will print an integer in decimal or a boolean as `true` or `false`, followed by a newline.
-A `void` result will produce no output.
-Successful execution will return status `0`, including when the entry returns a nonzero integer.
-An error will return status `1`, with no standard output and a positioned diagnostic on standard error.
+The `--run <file>` command uses `main` as its entry.
+It prints an integer in decimal or a boolean as `true` or `false`, followed by a newline.
+A `void` result produces no output.
+Successful execution returns status `0`, including when the entry returns a nonzero integer.
+An error returns status `1`, with no standard output and a positioned diagnostic on standard error.
+
+After the build, operate `./build/minic --run examples/interpreter.mc` from the repository root.
+The command prints `42` and returns status `0`.
+`./build/minic --run examples/short_circuit.mc` prints `true` and returns status `0`.
+The [runtime-error example](../examples/runtime_error.mc) passes static analysis but fails on its initializer at line 3, column 15.
+The call, control-flow, and syntax-study examples are not all executable in phase 6.
+
+### Runtime diagnostics
+
+Runtime diagnostics use `file:line:column: error: message`.
+Static errors retain their earlier stage priority, and execution stops at its first runtime error.
+Runtime errors do not expose C++ overflow, read uninitialized C++ storage, or print partial result values.
+
+| Error | Reported position |
+|-------|-------------------|
+| Missing entry function | Line 1, column 1 |
+| Entry with parameters | Entry function name |
+| Positive integer literal outside the range | Integer literal |
+| Negative literal outside the range | Unary minus |
+| Arithmetic overflow or zero divisor | Operator |
+| Variable without a value | Name use |
+| Unsupported function call | Called function name |
+| Unsupported `if` or `while` | Statement keyword |
+
+The caller receives `RuntimeError` for runtime failures through the C++ API.
+The API can also report existing static-analysis errors before it selects or executes an entry.
+Neither the API nor the command changes the source AST, name rules, type rules, or grammar.
 
 ## Planned language scope
 

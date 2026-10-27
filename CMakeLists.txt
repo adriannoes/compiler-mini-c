@@ -27,7 +27,7 @@ add_library(minic_runtime src/runtime.cpp src/interpreter.cpp)
 target_link_libraries(minic_runtime PUBLIC minic_frontend)
 
 add_executable(minic src/main.cpp)
-target_link_libraries(minic PRIVATE minic_frontend)
+target_link_libraries(minic PRIVATE minic_runtime)
 
 include(CTest)
 
@@ -105,7 +105,13 @@ if(BUILD_TESTING)
                         check_lexer check_types check_type_error check_arity check_return_path
                         check_void_parameter check_syntax_error check_lexical_error
                         check_resolution_error check_missing_file check_missing_argument
-                        check_extra_argument check_empty)
+                        check_extra_argument check_empty
+                        run_hello run_interpreter run_short_circuit run_void run_runtime_error
+                        run_division_zero run_overflow run_literal_range run_minimum
+                        run_missing_entry run_entry_parameters run_unsupported_call
+                        run_unsupported_if run_unsupported_while run_type_error
+                        run_resolution_error run_syntax_error run_lexical_error
+                        run_missing_file run_missing_argument run_extra_argument)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"

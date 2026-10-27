@@ -66,13 +66,14 @@ cmake --build build
 ./build/minic --ast examples/hello.mc
 ./build/minic --resolve examples/scopes.mc
 ./build/minic --check examples/types.mc
+./build/minic --run examples/interpreter.mc
 ctest --test-dir build --output-on-failure
 ```
 
 CTest is part of CMake.
 CMake enables tests by default.
 The tests use only the C++ standard library and CMake.
-The C++ tests compare tokens, AST structure, source positions, symbol tables, name bindings, expression types, and analysis errors.
+The C++ tests compare tokens, AST structure, source positions, symbol tables, name bindings, expression types, execution values, and diagnostics.
 The command tests compare output, diagnostics, and exit codes.
 CMake enables `-Wall -Wextra -Wpedantic` for Clang and GCC, including test targets.
 
@@ -83,16 +84,16 @@ Both use compiler instrumentation and add no project dependency.
 From the repository root, create a separate Debug build with Clang:
 
 ```bash
-cmake -S . -B build-types-sanitize \
+cmake -S . -B build-interpreter-sanitize \
   -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' \
   -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
-cmake --build build-types-sanitize
+cmake --build build-interpreter-sanitize
 ASAN_OPTIONS=halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 \
-  ctest --test-dir build-types-sanitize --output-on-failure
+  ctest --test-dir build-interpreter-sanitize --output-on-failure
 ```
 
-The phase 5 validation passes all 119 tests in both normal and sanitizer builds on Apple Clang 17.
+The phase 6 validation passes all 162 tests in both normal and sanitizer builds on Apple Clang 17.
 Both builds compile without warnings.
 Build directories remain outside version control.
 

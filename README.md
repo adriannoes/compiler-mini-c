@@ -68,7 +68,8 @@ The `--check` command analyzes the complete program and returns `0` without outp
 Phase 6 provides `minic::interpret`, owned runtime values, and guarded signed 64-bit arithmetic in a separate library.
 The approved [execution rules](docs/language.md#phase-6-execution-rules) define numeric errors, initialization behavior, entry selection, and the supported subset.
 The API executes the supported subset after static analysis and returns a value that does not borrow the AST.
-The `--run` command remains pending.
+The `--run` command executes `main` without parameters and prints its integer or boolean result.
+Calls, `if`, and `while` remain outside this execution subset until phase 7.
 
 ## Build and use
 
@@ -88,6 +89,8 @@ cmake --build build
 ./build/minic --resolve examples/recursion.mc
 ./build/minic --check examples/types.mc
 ./build/minic --check examples/recursion.mc
+./build/minic --run examples/interpreter.mc
+./build/minic --run examples/short_circuit.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -142,6 +145,29 @@ Type checking preserves the existing grammar and does not evaluate expressions o
 It does not enforce numeric limits, analyze definite initialization, or require `main`.
 Non-void functions require a guaranteed return under the [conservative return rules](docs/language.md#functions-and-conditions).
 
+The [interpreter example](examples/interpreter.mc) prints `42` after assignment and nested scopes.
+The [short-circuit example](examples/short_circuit.mc) prints `true` without evaluating skipped assignments or division by zero.
+Both commands return status `0`. A `void` entry produces no output.
+The printed result does not become the process exit status.
+
+The [runtime-error example](examples/runtime_error.mc) passes `--check` but fails with `--run` because its initializer reads a variable without a value.
+From the repository root, operate the execution command after the build:
+
+```bash
+./build/minic --run examples/runtime_error.mc
+```
+
+The command returns `1`, prints no standard output, and writes this diagnostic to standard error:
+
+```text
+examples/runtime_error.mc:3:15: error: The variable "value" has no value.
+```
+
+The interpreter rejects out-of-range literals, integer overflow, division by zero, and remainder by zero when execution reaches them.
+It completes static analysis for every function before it executes the selected entry.
+Reached calls, `if`, and `while` report unsupported-node errors.
+The existing call and control-flow examples remain phase 7 execution work, and syntax-only examples retain their original purpose.
+
 ## Tests
 
 After the build, run the tests from the repository root:
@@ -150,10 +176,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 141 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, and commands.
+The 162 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-The original 119 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+All 162 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -182,7 +208,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 3 | Parsing theory (First/Follow, bottom-up) | done |
 | 4 | Symbol table / scopes | done |
 | 5 | Type checking | done |
-| 6 | Tree-walk interpreter (stage A) | in progress |
+| 6 | Tree-walk interpreter (stage A) | done |
 | 7 | Functions and control flow | pending |
 | 8 | Bytecode compiler | pending |
 | 9 | VM (stage B, primary target) | pending |
@@ -194,5 +220,6 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 Phase 2 delivers syntax and AST output, and phase 3 records the related theory.
 Phase 4 adds name resolution without changing those syntax contracts.
 Phase 5 adds type analysis and the independent `--check` command.
-Execution remains in the later roadmap phases.
+Phase 6 executes the expression and block subset through `--run`.
+Calls and control flow remain in phase 7, before bytecode and VM work.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.
