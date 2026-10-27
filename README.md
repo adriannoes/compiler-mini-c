@@ -318,7 +318,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 9 | VM (stage B, primary target) | done |
 | 10 | Local optimizations | done |
 | 11 | Optional language features | done |
-| 12 | LLVM literacy | pending |
+| 12 | LLVM literacy | in progress |
 | 13 | Wrap-up / portfolio polish | pending |
 
 Phase 2 delivers syntax and AST output, and phase 3 records the related theory.

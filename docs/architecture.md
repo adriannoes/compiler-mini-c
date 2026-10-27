@@ -652,6 +652,13 @@ Golden outputs preserve bracket positions, extent text, element bindings, metada
 The phase 11 suite contains 398 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
 The prose scan reports no findings. Build commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
 
+## LLVM study boundary
+
+The [LLVM notes](theory-llvm.md#pipeline-map) map the implemented stages to Clang analysis, LLVM IR, passes, and native code generation.
+The phase 12 laboratory compiles separate C sources with the host Clang.
+It does not consume the Mini-C AST or bytecode and does not link LLVM libraries into the project.
+This boundary permits an IR experiment without a second implementation of Mini-C runtime contracts.
+
 ## Planned pipeline
 
 ```text

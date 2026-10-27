@@ -418,15 +418,28 @@ Lookup terms (by choice): `array`, `struct`, `record`, `garbage collection`, `ma
 
 ## Phase 12: LLVM literacy (conversation fluency)
 
+Status: in progress. This phase studies LLVM through a separate C laboratory with the installed Clang.
+
 Notes: [theory-llvm.md](theory-llvm.md).
+The approved boundary lives in [language.md](language.md#phase-12-llvm-study-boundary).
+Delivery uses three local increments:
+
+1. Map Mini-C stages to Clang/LLVM and document IR concepts and laboratory decisions.
+2. Add C sources, generated IR examples, reproducible commands, and native result comparisons.
+3. Annotate the observed IR, write the interview explanation, and complete documentation and final checks.
+
+Increment 1 records the pipeline map, SSA and memory distinction, tool roles, and accepted scope.
+The existing 398 tests pass before the phase begins, with no compiler warnings.
+The laboratory adds no compiler command, execution backend, or required tool dependency.
+Standalone `opt` and `llc` are unavailable on this host's `PATH`, so their execution remains an optional exercise.
 
 Lookup terms: `LLVM IR`, `SSA`, `static single assignment`, `basic block`, `phi node`, `pass`, `pass manager`, `clang`, `opt`, `llc`, `code generation`, `target triple`
 
-- [ ] Map our pipeline stages onto Clang/LLVM vocabulary (front end, IR, passes, codegen)
+- [x] Map our pipeline stages onto Clang/LLVM vocabulary (front end, IR, passes, codegen)
 - [ ] Read a small C snippet's LLVM IR (`clang -S -emit-llvm`) and annotate it
 - [ ] Optional thin experiment: emit a tiny subset to LLVM IR or walk an existing `.ll` file through `opt`/`llc`
 - [ ] Write a short "how I would explain LLVM in an interview" section in [theory-llvm.md](theory-llvm.md)
-- [ ] Explicit non-goal: production Clang/MLIR engineering depth
+- [x] Explicit non-goal: production Clang/MLIR engineering depth
 
 ## Phase 13: Wrap-up
 

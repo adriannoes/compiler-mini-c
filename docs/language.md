@@ -771,6 +771,14 @@ The [array-error example](../examples/array_error.mc) reads an element without a
 Command fixtures cover tokens, AST data, bindings, types, both disassemblies, and all execution modes.
 The syntax-only and names-only commands also accept invalid lengths and index types until type analysis checks them.
 
+## Phase 12 LLVM study boundary
+
+Phase 12 studies LLVM through an independent C laboratory and the [LLVM notes](theory-llvm.md).
+The Mini-C syntax, analysis rules, bytecode, execution engines, diagnostics, and limits retain their phase 11 contracts.
+The laboratory uses C integer semantics rather than the Mini-C signed 64-bit rules.
+Clang remains a laboratory tool rather than a dependency of the Mini-C executable.
+An LLVM backend and additional commands remain outside this phase.
+
 ## Planned language scope
 
 The following language scope grows phase by phase (see [roadmap.md](roadmap.md)):
