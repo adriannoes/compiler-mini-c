@@ -248,11 +248,29 @@ Lookup terms: `interpreter`, `tree-walk interpreter`, `evaluation`, `operational
 
 ## Phase 7: Functions and control flow
 
+Status: in progress.
+
+The approved rules live in [language.md](language.md#phase-7-execution-rules).
+Frame ownership and limit design live in [architecture.md](architecture.md#function-execution-and-limits).
+Delivery uses three local increments:
+
+1. Conditions, loops, deterministic step limits, focused tests, and the approved design record.
+2. Stable call frames, copied parameters, function calls, recursion, and call-depth limits.
+3. Factorial and Fibonacci examples, command regressions, documentation, and normal and sanitizer validation.
+
+Increment 1 is complete: conditions and loops execute with return propagation and a shared step budget.
+Five new API test groups cover branch selection, loops, iteration environments, nested returns, and limit behavior.
+The existing command cases for conditions and loops now expect execution results instead of unsupported-node errors.
+Calls and final validation remain pending. Phase 7 is not complete.
+
 Lookup terms: `activation record`, `stack frame`, `calling convention`, `parameter passing`, `call stack`, `control flow`, `recursion`
 
-- [ ] `if` / `while` / functions working in the interpreter
+- [x] `if` / `while` working in the interpreter
+- [x] Execution step limits
+- [ ] Function frames, parameters, calls, and call-depth limits
 - [ ] Examples: factorial, fibonacci
 - [ ] Regression tests for call/return and recursion
+- [ ] Final normal and sanitizer validation
 
 ## Phase 8: Bytecode compiler
 

@@ -328,7 +328,8 @@ Statement execution returns `std::optional<Value>` as a control signal.
 `std::nullopt` continues execution, while an engaged value propagates a return through nested blocks.
 An engaged `std::monostate` ends a `void` entry, unlike fallthrough without a return.
 Expressions evaluate their left operand before the right operand, and logical operators can skip the right operand.
-Reached calls and control-flow nodes throw `RuntimeError` instead of starting phase 7 behavior.
+Reached calls still throw `RuntimeError` until the call-frame increment.
+Conditions select one branch, and loops reevaluate their condition before each body execution.
 
 The public call accepts temporary programs because its returned value contains no AST references.
 Repeated calls create fresh analysis and environment state without changing the source tree.
@@ -337,7 +338,7 @@ No interpreter instance or environment escapes the call.
 `--run <file>` uses `main` as its entry and formats the returned value only after execution succeeds.
 An integer or boolean result ends with a newline, while a `void` result prints nothing.
 The process status remains `0` on success, independently of the entry result, and becomes `1` on failure.
-Calls and control flow remain phase 7 work, with explicit errors for reached unsupported nodes.
+Function calls remain pending in phase 7, while conditions and loops execute their selected statements.
 The existing analysis modes do not invoke execution.
 
 ## Interpreter learning note
@@ -359,10 +360,33 @@ They also cover repeated execution, AST preservation, and returned values that o
 Command tests compare exact result text, empty void output, positioned diagnostics, and process exit codes.
 The runtime-error example passes `--check` and fails with the expected uninitialized-read diagnostic in `--run`.
 
-The runtime requires an entry without parameters and reports reached calls, `if`, and `while` as unsupported.
-Those nodes retain their static-analysis support and await phase 7 execution.
+The phase 6 runtime required an entry without parameters and reported reached calls, `if`, and `while` as unsupported.
+Phase 7 extends that execution subset without changing its numeric or initialization rules.
 The interpreter does not implement function frames, recursion, bytecode, or VM behavior.
 Recursive AST traversal remains limited by the available C++ call stack.
+
+## Function execution and limits
+
+The approved [phase 7 rules](language.md#phase-7-execution-rules) define control flow, calls, frame isolation, and execution limits.
+`if` executes only its selected branch, and `while` evaluates its condition on every iteration.
+Explicit blocks retain the existing environment guard, including fresh local slots on each loop iteration.
+The existing return signal propagates through both control-flow statements.
+
+`ExecutionLimits` supplies positive step and call-depth limits without changing existing interpreter calls.
+The two-argument function delegates to the overload with limits.
+A single counter charges expression and statement entry, including each function body block and repeated loop condition.
+The interpreter compares the counter with its limit before incrementing it, so the counter cannot overflow.
+Budget exhaustion reports the next node position without evaluating it.
+
+The next increment will give each call an exclusively owned frame with a stable address.
+Each frame will own its environment stack, and lookup will remain inside that frame.
+This adds one allocation per call but keeps environment guards valid while nested calls grow the frame stack.
+Arguments will evaluate in the caller before parameter values enter the new frame.
+The interpreter will reuse its existing static analysis instead of repeating it for each activation.
+
+The final increment will add factorial and Fibonacci examples and complete command regression coverage.
+Bytecode and VM work remain in their later roadmap phases.
+The existing analysis modes remain independent of execution limits.
 
 ## Planned pipeline
 

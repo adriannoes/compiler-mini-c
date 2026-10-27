@@ -69,7 +69,8 @@ Phase 6 provides `minic::interpret`, owned runtime values, and guarded signed 64
 The approved [execution rules](docs/language.md#phase-6-execution-rules) define numeric errors, initialization behavior, entry selection, and the supported subset.
 The API executes the supported subset after static analysis and returns a value that does not borrow the AST.
 The `--run` command executes `main` without parameters and prints its integer or boolean result.
-Calls, `if`, and `while` remain outside this execution subset until phase 7.
+Phase 7 adds `if`/`else`, `while`, and a configurable step budget to execution.
+Function calls and frames remain pending within the [approved phase 7 scope](docs/language.md#phase-7-execution-rules).
 
 ## Build and use
 
@@ -165,8 +166,8 @@ examples/runtime_error.mc:3:15: error: The variable "value" has no value.
 
 The interpreter rejects out-of-range literals, integer overflow, division by zero, and remainder by zero when execution reaches them.
 It completes static analysis for every function before it executes the selected entry.
-Reached calls, `if`, and `while` report unsupported-node errors.
-The existing call and control-flow examples remain phase 7 execution work, and syntax-only examples retain their original purpose.
+Reached calls still report unsupported-node errors until the call-frame increment.
+Conditions and loops execute, while syntax-only examples retain their original purpose.
 
 ## Tests
 
@@ -176,10 +177,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 162 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, and commands.
+The 167 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-All 162 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+The original 162 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -209,7 +210,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 4 | Symbol table / scopes | done |
 | 5 | Type checking | done |
 | 6 | Tree-walk interpreter (stage A) | done |
-| 7 | Functions and control flow | pending |
+| 7 | Functions and control flow | in progress |
 | 8 | Bytecode compiler | pending |
 | 9 | VM (stage B, primary target) | pending |
 | 10 | Local optimizations | pending |
@@ -221,5 +222,5 @@ Phase 2 delivers syntax and AST output, and phase 3 records the related theory.
 Phase 4 adds name resolution without changing those syntax contracts.
 Phase 5 adds type analysis and the independent `--check` command.
 Phase 6 executes the expression and block subset through `--run`.
-Calls and control flow remain in phase 7, before bytecode and VM work.
+Phase 7 adds control flow, with calls still pending before bytecode and VM work.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

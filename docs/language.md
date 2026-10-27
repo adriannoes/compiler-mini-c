@@ -433,8 +433,8 @@ An empty program also succeeds because the checker does not require `main`.
 ## Phase 6 execution rules
 
 The phase 6 interpreter evaluates expressions, declarations, assignments, blocks, empty statements, and returns.
-Function calls, `if`, and `while` remain in phase 7.
-Reaching an unsupported node produces a runtime error.
+Phase 7 extends this foundation with conditions, loops, and function calls.
+Conditions and loops are available. Reached function calls remain unsupported until the next increment.
 The value library, `interpret` API, and `--run` command provide this subset.
 
 ### Values and numeric limits
@@ -483,10 +483,10 @@ A return propagates through nested blocks and ends entry execution.
 A `void` entry can also end without an explicit return.
 Statements after an executed return do not run, but they still require valid static analysis.
 
-Unsupported calls and control-flow nodes produce errors only when execution reaches them.
-An unused helper function can contain those nodes if it passes static analysis.
-A skipped logical operand or a statement after a return does not trigger an unsupported-node error.
-This boundary preserves the separate phase 7 work on calls, frames, conditions, loops, and recursion.
+Unsupported function calls produce errors only when execution reaches them.
+An unused helper function can contain calls if it passes static analysis.
+A skipped logical operand or a statement after a return does not trigger an unsupported-call error.
+Conditions and loops follow the phase 7 rules that follow.
 
 ### API and command contract
 
@@ -505,7 +505,7 @@ After the build, operate `./build/minic --run examples/interpreter.mc` from the 
 The command prints `42` and returns status `0`.
 `./build/minic --run examples/short_circuit.mc` prints `true` and returns status `0`.
 The [runtime-error example](../examples/runtime_error.mc) passes static analysis but fails on its initializer at line 3, column 15.
-The call, control-flow, and syntax-study examples are not all executable in phase 6.
+The call, control-flow, and syntax-study examples were not all executable within the phase 6 subset.
 
 ### Runtime diagnostics
 
@@ -522,11 +522,68 @@ Runtime errors do not expose C++ overflow, read uninitialized C++ storage, or pr
 | Arithmetic overflow or zero divisor | Operator |
 | Variable without a value | Name use |
 | Unsupported function call | Called function name |
-| Unsupported `if` or `while` | Statement keyword |
+| Execution step limit | Next expression or statement |
 
 The caller receives `RuntimeError` for runtime failures through the C++ API.
 The API can also report existing static-analysis errors before it selects or executes an entry.
 Neither the API nor the command changes the source AST, name rules, type rules, or grammar.
+
+## Phase 7 execution rules
+
+Phase 7 completes interpreter support for the existing functions and control-flow syntax.
+It preserves the grammar, lexical bindings, type rules, numeric behavior, and entry rules.
+Conditions, loops, and step limits are available. Function frames and calls remain pending.
+
+### Conditions and loops
+
+An `if` evaluates its condition once and executes only the selected branch.
+An `if` without an `else` does nothing when its condition is false.
+A `while` evaluates its condition before every iteration, including before the first iteration.
+Both statements use the boolean types established by static analysis.
+An unselected branch or skipped loop body produces no runtime side effects or errors.
+
+Only an explicit block creates a lexical environment.
+A loop body with braces creates a new environment on every iteration, so local variables do not retain earlier iteration values.
+A body without braces uses its existing scope.
+A return propagates through conditions and loops until it ends the current function.
+The conservative static return rules remain unchanged, including their treatment of `while`.
+
+### Calls and frames
+
+Each function call uses the declaration selected by name resolution.
+The interpreter evaluates arguments from left to right in the caller before creating the callee frame.
+Parameters receive copies of argument values. Assigning to a parameter does not change the original caller variable.
+Parameters and the outer function body share an environment, as defined by the existing scope rules.
+
+A frame owns the active environments for one function activation.
+Runtime lookup searches only the current frame, without examining caller environments.
+Recursive activations reuse lexical symbol identifiers but own separate value slots.
+Forward calls, direct recursion, and mutual recursion use the existing name bindings.
+Each return ends only its current function, and the call supplies that value to the caller.
+
+A `void` function returns no value, including when its body ends without an explicit return.
+Static analysis still rejects invalid argument counts, invalid argument types, and invalid uses of a `void` result.
+The interpreter performs static analysis once before entry selection and reuses it across calls.
+The API and CLI entry still require zero parameters, independently of internal calls with arguments.
+
+### Execution limits
+
+`ExecutionLimits` defaults to `max_steps = 1000000` and `max_call_depth = 128`.
+Both limits must be positive. Invalid API limits produce `std::invalid_argument` before static analysis.
+The existing two-argument `interpret` call uses these defaults.
+The overload `interpret(program, entry, limits)` accepts explicit limits without adding CLI flags.
+
+Entering an expression or statement consumes one step before evaluation.
+Each function body counts as a block, and each repeated loop condition consumes expression steps.
+A unary minus and its direct literal each consume a step, including the minimum-integer case.
+Skipped operands, branches, and statements consume no execution steps.
+Static analysis does not consume the runtime budget.
+
+The step limit reports `The execution step limit was reached.` at the next node that would exceed the budget.
+The call-depth limit counts active frames, including the entry as depth one.
+Its error identifies the called function name when another frame would exceed the limit.
+Arguments complete evaluation before the interpreter attempts to enter that frame.
+Limits stop nonterminating loops and recursion without changing the success output or failure status contract.
 
 ## Planned language scope
 

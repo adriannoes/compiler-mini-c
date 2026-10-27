@@ -27,7 +27,7 @@ class EnvironmentScope {
 
 class Interpreter {
  public:
-  explicit Interpreter(const Program& program) : analysis_(check_types(program)) {
+  Interpreter(const Program& program, ExecutionLimits limits) : analysis_(check_types(program)), limits_(limits) {
     const auto& symbols = analysis_.resolution().table().symbols();
     for (std::size_t i = 0; i < symbols.size(); ++i) {
       if (const auto* declaration = std::get_if<const VarDecl*>(&symbols[i].declaration)) {
@@ -46,6 +46,7 @@ class Interpreter {
     if (!function->parameters.empty()) {
       throw RuntimeError(function->location, "The entry function \"" + entry + "\" must not have parameters.");
     }
+    step(function->body.location);
     const auto returned = block(function->body);
     if (returned) {
       return *returned;
@@ -57,6 +58,13 @@ class Interpreter {
   }
 
  private:
+  void step(SourceLocation location) {
+    if (steps_ == limits_.max_steps) {
+      throw RuntimeError(location, "The execution step limit was reached.");
+    }
+    ++steps_;
+  }
+
   std::optional<Value>& slot(const Expr& expression) {
     const auto* binding = analysis_.resolution().binding(expression);
     if (!binding) {
@@ -72,6 +80,7 @@ class Interpreter {
   }
 
   Value expression(const Expr& expression) {
+    step(expression.location);
     return std::visit([&](const auto& node) { return evaluate(node, expression); }, expression.node);
   }
 
@@ -92,6 +101,7 @@ class Interpreter {
   Value evaluate(const UnaryExpr& node, const Expr& source) {
     if (node.op == TokenKind::Minus) {
       if (const auto* literal = std::get_if<IntegerExpr>(&node.operand->node)) {
+        step(node.operand->location);
         return detail::parse_integer(literal->text, true, source.location);
       }
     }
@@ -122,7 +132,10 @@ class Interpreter {
   }
 
   std::optional<Value> statement(const Stmt& statement) {
-    return std::visit([&](const auto& node) { return execute(node); }, statement.node);
+    return std::visit([&](const auto& node) {
+      step(node.location);
+      return execute(node);
+    }, statement.node);
   }
 
   std::optional<Value> block(const BlockStmt& block) {
@@ -163,20 +176,40 @@ class Interpreter {
   }
 
   std::optional<Value> execute(const IfStmt& node) {
-    throw RuntimeError(node.location, "The interpreter does not support if statements.");
+    if (std::get<bool>(expression(*node.condition))) {
+      return statement(*node.then_branch);
+    }
+    return node.else_branch ? statement(*node.else_branch) : std::nullopt;
   }
 
   std::optional<Value> execute(const WhileStmt& node) {
-    throw RuntimeError(node.location, "The interpreter does not support while statements.");
+    while (std::get<bool>(expression(*node.condition))) {
+      auto returned = statement(*node.body);
+      if (returned) {
+        return returned;
+      }
+    }
+    return std::nullopt;
   }
 
   TypeAnalysis analysis_;
   std::unordered_map<const VarDecl*, std::size_t> declarations_;
   std::vector<Environment> environments_;
+  ExecutionLimits limits_;
+  std::size_t steps_ = 0;
 };
 
 }  // namespace
 
-Value interpret(const Program& program, const std::string& entry) { return Interpreter(program).run(entry); }
+Value interpret(const Program& program, const std::string& entry) {
+  return interpret(program, entry, ExecutionLimits{});
+}
+
+Value interpret(const Program& program, const std::string& entry, ExecutionLimits limits) {
+  if (limits.max_steps == 0 || limits.max_call_depth == 0) {
+    throw std::invalid_argument("Execution limits must be greater than zero.");
+  }
+  return Interpreter(program, limits).run(entry);
+}
 
 }  // namespace minic

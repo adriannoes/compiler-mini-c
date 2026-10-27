@@ -136,10 +136,69 @@ void numeric_errors() {
 void unsupported() {
   expect_error("int f() { return 1; } int main() {\n  return f(); }", {2, 10},
                "The interpreter does not support function calls.");
-  expect_error("int main() {\n  if (true) return 1;\n  return 0; }", {2, 3},
-               "The interpreter does not support if statements.");
-  expect_error("int main() {\n  while (true) ;\n  return 0; }", {2, 3},
-               "The interpreter does not support while statements.");
+}
+
+void conditionals() {
+  expect_integer("int main() { if (true) return 1; else return 1 / 0; }", 1);
+  expect_integer("int main() { if (false) return 1 / 0; else return 2; }", 2);
+  expect_integer("int main() { int x = 0; if (false) x = 1; return x; }", 0);
+  expect_integer("int main() { int x = 0; if (true) if (false) x = 1; else x = 2; return x; }", 2);
+  expect_integer("int main() { bool b = false; if (b = !b) { int x = 4; return x; } return 0; }", 4);
+}
+
+void loops() {
+  expect_integer("int main() { int x = 0; while (x < 4) x = x + 1; return x; }", 4);
+  expect_integer("int main() { while (false) 1 / 0; return 3; }", 3);
+  expect_integer("int main() { int x = 0; while ((x = x + 1) < 4) ; return x; }", 4);
+  expect_integer("int main() { int total = 0; int i = 0; while (i < 2) { int j = 0; "
+                 "while (j < 3) { total = total + 1; j = j + 1; } i = i + 1; } return total; }", 6);
+}
+
+void loop_environments() {
+  expect_integer("int main() { int i = 0; int total = 0; while (i < 3) { int x; x = i; "
+                 "{ int i = 10; total = total + x + i; } i = i + 1; } return total; }", 33);
+  expect_error("int main() { int i = 0; while (i < 2) { int x; if (i == 0) x = 1; "
+               "i = i + 1;\n  x; } return 0; }", {2, 3}, "The variable \"x\" has no value.");
+}
+
+void control_returns() {
+  expect_integer("int main() { while (true) { while (true) { if (true) return 7; } } return 0; }", 7);
+  require(std::holds_alternative<std::monostate>(evaluate("void main() { while (true) { if (true) return; } 1 / 0; }")),
+          "Expected a void return to leave conditions and loops.");
+}
+
+void step_limits() {
+  const auto simple = minic::parse(minic::lex("int main() { return 42; }"));
+  require(std::get<std::int64_t>(minic::interpret(simple, "main", {3, 128})) == 42,
+          "Expected one step for the body, return, and integer expression.");
+  try {
+    minic::interpret(simple, "main", {2, 128});
+    throw std::runtime_error("Expected a step limit error.");
+  } catch (const minic::RuntimeError& error) {
+    require(error.location.line == 1 && error.location.column == 21 &&
+                std::string(error.what()) == "The execution step limit was reached.",
+            "Expected the step error at the next expression.");
+  }
+  const auto loop = minic::parse(minic::lex("void main() {\n  while (true) ;\n}"));
+  try {
+    minic::interpret(loop, "main", {6, 128});
+    throw std::runtime_error("Expected the loop to consume its step budget.");
+  } catch (const minic::RuntimeError& error) {
+    require(error.location.line == 2 && error.location.column == 10 &&
+                std::string(error.what()) == "The execution step limit was reached.",
+            "Expected the loop condition to consume steps on each iteration.");
+  }
+  const auto minimum = minic::parse(minic::lex("int main() { return -9223372036854775808; }"));
+  require(std::get<std::int64_t>(minic::interpret(minimum, "main", {4, 128})) == std::numeric_limits<std::int64_t>::min(),
+          "Expected a step for both the unary operator and its literal.");
+  for (const minic::ExecutionLimits limits : {minic::ExecutionLimits{0, 128}, minic::ExecutionLimits{100, 0}}) {
+    try {
+      minic::interpret(simple, "main", limits);
+      throw std::runtime_error("Expected positive execution limits.");
+    } catch (const std::invalid_argument& error) {
+      require(std::string(error.what()) == "Execution limits must be greater than zero.", "Unexpected limit diagnostic.");
+    }
+  }
 }
 
 void skipped_nodes() {
@@ -184,6 +243,8 @@ int main(int argc, char** argv) {
       {"entry_selection", entry_selection}, {"numeric_limits", numeric_limits}, {"numeric_errors", numeric_errors},
       {"unsupported", unsupported}, {"skipped_nodes", skipped_nodes}, {"static_priority", static_priority},
       {"ownership", ownership},
+      {"conditionals", conditionals}, {"loops", loops}, {"loop_environments", loop_environments},
+      {"control_returns", control_returns}, {"step_limits", step_limits},
   };
   if (argc == 2) {
     for (const auto& test : cases) {
