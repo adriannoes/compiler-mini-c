@@ -87,7 +87,7 @@ Phase 10 provides `minic::optimize_bytecode`, local constant folding, unreachabl
 The [optimization rules](docs/language.md#phase-10-optimization-rules) preserve source steps, numeric failures, effects, and the original input.
 The `--bytecode-opt` command prints optimized instructions, and `--run-vm-opt` executes them on the VM.
 
-Phase 11 adds syntax, bindings, type analysis, and bytecode for fixed local `int` and `bool` arrays.
+Phase 11 adds fixed local `int` and `bool` arrays across syntax, name resolution, type analysis, bytecode, and execution.
 Lengths range from 1 through 1024, and brackets add two token types for a total of 35.
 The [array rules](docs/language.md#phase-11-local-arrays) define bounds, initialization, and indexed assignment order.
 The interpreter, VM, and optimized VM execute indexed reads and writes with bounds and missing-value diagnostics.
@@ -138,8 +138,9 @@ The token output includes the source position and ends with `EOF`:
 ```
 
 Use `./build/minic --help` to see the available commands.
-The [lexer example](examples/lexer.mc) includes every token type, with commas in parameters and calls.
+The [lexer example](examples/lexer.mc) includes all 33 phase 1 token types, with commas in parameters and calls.
 Its expected output lives in [tests/lexer.tokens](tests/lexer.tokens).
+The [array example](examples/arrays.mc) adds both bracket tokens from phase 11.
 The [expression example](examples/expressions.mc) demonstrates precedence, grouping, and assignment without evaluating them.
 Its expected tree lives in [tests/expressions.ast](tests/expressions.ast).
 The [call example](examples/calls.mc) adds parameters, declarations, nested calls, and an empty statement.
@@ -250,6 +251,27 @@ It retains operations that can fail when execution reaches them. It can omit ope
 The optimizer retains unused pool constants and every function signature, so named entry selection remains available.
 The existing disassembly and execution commands keep their original behavior.
 
+## Local arrays
+
+The [array example](examples/arrays.mc) fills four integer elements in a loop and uses two boolean elements in a condition.
+After the build, operate the three execution commands from the repository root:
+
+```bash
+./build/minic --run examples/arrays.mc
+./build/minic --run-vm examples/arrays.mc
+./build/minic --run-vm-opt examples/arrays.mc
+```
+
+All three commands print `10`. The existing analysis and disassembly commands also accept this example.
+Expected tokens, AST, name bindings, and both disassemblies live in `tests/arrays.*`.
+
+An array declaration clears every element, including each time a loop executes that declaration.
+Reading an element before assignment fails at the array name position.
+The [array-error example](examples/array_error.mc) fails at line 5, column 10 because `values[1]` has no value.
+Indices must fit the declared length, and an indexed assignment checks its index before its right operand.
+Lengths range from 1 through 1024. Arrays remain local and cannot act as whole values, arguments, or return values.
+These rules teach the difference between scalar values, indexed storage, and runtime index checks without adding pointers or dynamic allocation.
+
 ## Tests
 
 After the build, run the tests from the repository root:
@@ -258,10 +280,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 374 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, arrays, and commands.
+The 398 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, arrays, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-The 350 tests from phase 10 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+All 398 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer, with no compiler warnings in either build.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -295,7 +317,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 8 | Bytecode compiler | done |
 | 9 | VM (stage B, primary target) | done |
 | 10 | Local optimizations | done |
-| 11 | Optional language features | in progress |
+| 11 | Optional language features | done |
 | 12 | LLVM literacy | pending |
 | 13 | Wrap-up / portfolio polish | pending |
 
@@ -307,4 +329,5 @@ Phase 7 adds calls, control flow, and recursion before bytecode and VM work.
 Phase 8 compiles the same language to inspectable bytecode.
 Phase 9 executes bytecode with explicit frames and compares its results and diagnostics with the interpreter.
 Phase 10 optimizes bytecode with guarded constant folding and local control-flow cleanup.
+Phase 11 adds local arrays with checked indices and independent storage for each function activation.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

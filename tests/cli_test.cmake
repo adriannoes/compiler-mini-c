@@ -14,7 +14,76 @@ elseif(CASE MATCHES "^vm_")
   string(REGEX REPLACE "^vm_" "run_" CASE "${CASE}")
 endif()
 
-if(CASE STREQUAL "hello")
+if(CASE STREQUAL "arrays" OR CASE STREQUAL "ast_arrays" OR CASE STREQUAL "resolve_arrays")
+  set(input "${SOURCE_DIR}/examples/arrays.mc")
+  if(CASE STREQUAL "arrays")
+    set(arguments --tokens "${input}")
+    set(extension tokens)
+  elseif(CASE STREQUAL "ast_arrays")
+    set(arguments --ast "${input}")
+    set(extension ast)
+  else()
+    set(arguments --resolve "${input}")
+    set(extension resolution)
+  endif()
+  file(READ "${SOURCE_DIR}/tests/arrays.${extension}" expected_output)
+elseif(CASE STREQUAL "ast_arrays_syntax_only")
+  file(WRITE "${input}" "void f() { int a[0000]; a[true]; }\n")
+  set(arguments --ast "${input}")
+  set(expected_output [=[Program
+  Function "f" @1:6
+    Type VOID @1:1
+    Block @1:10
+      Variable "a" @1:16
+        Type INT @1:12
+        Length "0000" @1:18
+      Expression @1:25
+        Index "a" @1:25
+          Boolean true @1:27
+]=])
+elseif(CASE STREQUAL "resolve_arrays_names_only")
+  file(WRITE "${input}" "void f() { int a[0000]; a[true]; }\n")
+  set(arguments --resolve "${input}")
+  set(expected_output [=[Resolution
+  Scope #0 GLOBAL @1:1
+  Scope #1 FUNCTION parent=#0 @1:6
+  Symbol #0 FUNCTION "f" scope=#0 @1:6
+  Symbol #1 VARIABLE "a" scope=#1 @1:16
+  Read "a" scope=#1 @1:25 -> Symbol #1 @1:16
+]=])
+elseif(CASE STREQUAL "check_array_length" OR CASE STREQUAL "check_array_index" OR CASE STREQUAL "check_array_value")
+  set(arguments --check "${input}")
+  set(expected_exit 1)
+  set(expected_output "")
+  if(CASE STREQUAL "check_array_length")
+    file(WRITE "${input}" "void main() {\n  int a[1025];\n}\n")
+    set(expected_error "${input}:2:9: error: Array length must be from 1 through 1024.\n")
+  elseif(CASE STREQUAL "check_array_index")
+    file(WRITE "${input}" "int main() {\n  int a[1];\n  return a[true];\n}\n")
+    set(expected_error "${input}:3:12: error: Expected type int. Received bool.\n")
+  else()
+    file(WRITE "${input}" "int main() {\n  int a[1];\n  return a;\n}\n")
+    set(expected_error "${input}:3:10: error: Array \"a\" requires an index.\n")
+  endif()
+elseif(CASE STREQUAL "run_arrays")
+  set(input "${SOURCE_DIR}/examples/arrays.mc")
+  set(arguments --run "${input}")
+  set(expected_output "10\n")
+elseif(CASE STREQUAL "run_array_error" OR CASE STREQUAL "run_array_bounds" OR CASE STREQUAL "run_array_order")
+  set(expected_exit 1)
+  set(expected_output "")
+  if(CASE STREQUAL "run_array_error")
+    set(input "${SOURCE_DIR}/examples/array_error.mc")
+    set(expected_error "${input}:5:10: error: The array element \"values[1]\" has no value.\n")
+  elseif(CASE STREQUAL "run_array_bounds")
+    file(WRITE "${input}" "int main() {\n  int a[1];\n  return a[-1];\n}\n")
+    set(expected_error "${input}:3:10: error: The array index -1 is outside \"a\" with length 1.\n")
+  else()
+    file(WRITE "${input}" "int main() {\n  int a[1];\n  a[1] = 1 / 0;\n  return 0;\n}\n")
+    set(expected_error "${input}:3:3: error: The array index 1 is outside \"a\" with length 1.\n")
+  endif()
+  set(arguments --run "${input}")
+elseif(CASE STREQUAL "hello")
   set(input "${SOURCE_DIR}/examples/hello.mc")
   file(READ "${SOURCE_DIR}/tests/hello.tokens" expected_output)
 elseif(CASE STREQUAL "language")
@@ -63,7 +132,7 @@ elseif(CASE STREQUAL "missing_argument")
   set(expected_error "minic: error: Expected --tokens <file>. Use --help for usage.\n")
 elseif(CASE STREQUAL "bytecode_hello" OR CASE STREQUAL "bytecode_factorial" OR CASE STREQUAL "bytecode_control_flow"
        OR CASE STREQUAL "bytecode_short_circuit" OR CASE STREQUAL "bytecode_calls" OR CASE STREQUAL "bytecode_runtime_error"
-       OR CASE STREQUAL "bytecode_optimization")
+       OR CASE STREQUAL "bytecode_optimization" OR CASE STREQUAL "bytecode_arrays")
   string(REGEX REPLACE "^bytecode_" "" example "${CASE}")
   set(input "${SOURCE_DIR}/examples/${example}.mc")
   set(arguments --bytecode "${input}")
@@ -301,7 +370,7 @@ elseif(CASE STREQUAL "run_missing_argument" OR CASE STREQUAL "run_extra_argument
   set(expected_error "minic: error: Expected --run <file>. Use --help for usage.\n")
 elseif(CASE STREQUAL "check_hello" OR CASE STREQUAL "check_scopes" OR CASE STREQUAL "check_recursion"
        OR CASE STREQUAL "check_calls" OR CASE STREQUAL "check_control_flow" OR CASE STREQUAL "check_lexer"
-       OR CASE STREQUAL "check_types")
+       OR CASE STREQUAL "check_types" OR CASE STREQUAL "check_arrays")
   string(REGEX REPLACE "^check_" "" example "${CASE}")
   set(input "${SOURCE_DIR}/examples/${example}.mc")
   set(arguments --check "${input}")

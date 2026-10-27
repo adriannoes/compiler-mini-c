@@ -6,6 +6,8 @@
 #include "vm.hpp"
 
 #include <iostream>
+#include <fstream>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <string_view>
@@ -209,10 +211,35 @@ void invalid_bytecode() {
   }
 }
 
+void fixtures(const std::string& directory) {
+  for (const std::string name : {"arrays", "array_error"}) {
+    std::ifstream input(directory + '/' + name + ".mc", std::ios::binary);
+    require(input.is_open(), "Cannot open the array example.");
+    const std::string source{std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+    const Programs programs(source);
+    const auto before = minic::print_bytecode(programs.plain);
+    const auto optimized_before = minic::print_bytecode(programs.optimized);
+    const auto expected = compare(programs);
+    same(expected, compare(programs));
+    if (name == "arrays") {
+      require(expected.value == minic::Value{std::int64_t{10}}, "Unexpected array example result.");
+    } else {
+      require(!expected.value && expected.message == "The array element \"values[1]\" has no value." &&
+                  expected.location.line == 5 && expected.location.column == 10, "Unexpected array example error.");
+    }
+    require(before == minic::print_bytecode(programs.plain) &&
+                optimized_before == minic::print_bytecode(programs.optimized), "Execution changed array bytecode.");
+  }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
   try {
+    if (argc == 3 && std::string_view(argv[1]) == "fixtures") {
+      fixtures(argv[2]);
+      return 0;
+    }
     require(argc == 2, "Expected one test case.");
     const std::string_view name = argv[1];
     if (name == "integers") integers();

@@ -591,7 +591,7 @@ Fifteen optimized disassembly cases cover fixtures, empty programs, front-end er
 Each command scenario uses a distinct temporary input path across execution engines.
 The optimization example decreases from 69 instructions to 36 and returns `24` in all three engines.
 The instruction counts describe code reduction without a timing measurement.
-The complete suite contains 350 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The phase 10 suite contains 350 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
 The prose scan reports no findings. The build commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
 
 Reachability asks whether control flow can visit an instruction.
@@ -632,7 +632,7 @@ The compiler stack-analysis tests also cover indexed operations inside calls, co
 Both execution engines use `detail::StorageSlot`, which owns an optional scalar and a vector of optional elements.
 Each function activation owns its slots. An executed declaration resets its slot and gives every array element no value.
 The interpreter stores slots in block environments, and the VM stores slots in its explicit call frames.
-The VM retains an array allocation until the frame ends or the declaration resets that slot.
+The VM retains element storage until its frame ends. Each declaration resets the element values for its slot.
 Static bindings prevent access after the block scope ends.
 
 The shared slot helpers check signed indices before conversion and report bounds or missing-value errors at the indexed name.
@@ -644,6 +644,13 @@ Element storage stays outside the scalar `Value` API and ordinary argument and r
 Fourteen execution groups cover both element types, evaluation order, initialization, loop resets, scopes, calls, recursion, limits, and malformed instructions.
 The differential group compares all three engines across 1920 combinations of program, step budget, and call-depth limit.
 The optimizer retains indexed checks, reads, and stores as barriers, including unused reads that can fail.
+
+The array examples exercise scalar calls, loops, boolean conditions, and missing element values.
+Repeated API execution preserves both bytecode inputs and recreates element storage after successful and failed runs.
+Twenty-three command cases cover the nine existing modes, including stage independence, bounds errors, and error priority.
+Golden outputs preserve bracket positions, extent text, element bindings, metadata, and indexed instruction order.
+The phase 11 suite contains 398 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The prose scan reports no findings. Build commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
 
 ## Planned pipeline
 

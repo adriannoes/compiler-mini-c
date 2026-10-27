@@ -388,7 +388,7 @@ Lookup terms: `constant folding`, `constant propagation`, `dead code elimination
 
 ## Phase 11: Optional language features (pick 1-2)
 
-Status: in progress. This phase adds local arrays with constant lengths.
+Status: complete. This phase adds local arrays with constant lengths.
 
 The approved rules live in [language.md](language.md#phase-11-local-arrays).
 AST and bytecode ownership live in [architecture.md](architecture.md#local-array-representation).
@@ -404,13 +404,17 @@ Whole arrays remain outside value expressions, function signatures, copies, and 
 Increment 2 adds owned storage per activation and executes indexed operations in the interpreter and both VM modes.
 Fourteen execution groups cover values, error priority, initialization, recursion, and instruction guards.
 They include 1920 differential combinations of program and limits across all three engines.
-Examples, command fixtures, and final sanitizer validation remain pending.
+Increment 3 adds examples, 23 command cases, and a fixture group that repeats successful and failed API execution.
+The array example returns `10` in all three engines, and the error example reports an element without a value.
+All 398 tests pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The prose scan reports no findings. LLVM work remains in phase 12.
 
 Lookup terms (by choice): `array`, `struct`, `record`, `garbage collection`, `mark and sweep`, `reference counting`
 
 - [x] Choose features after stage B + local opts feel solid
 - [x] Document chosen features in [language.md](language.md) before implementing
-- [ ] Tests and examples for each feature
+- [x] Tests and examples for each feature
+- [x] Final normal and sanitizer validation
 
 ## Phase 12: LLVM literacy (conversation fluency)
 

@@ -49,6 +49,7 @@ if(BUILD_TESTING)
     add_test(NAME array_runtime.${case} COMMAND minic_arrays_runtime_tests ${case})
   endforeach()
   set_tests_properties(array_runtime.differential_limits PROPERTIES TIMEOUT 30)
+  add_test(NAME array_runtime.fixtures COMMAND minic_arrays_runtime_tests fixtures "${CMAKE_CURRENT_SOURCE_DIR}/examples")
 
   add_executable(minic_arrays_frontend_tests tests/arrays_frontend_test.cpp)
   target_link_libraries(minic_arrays_frontend_tests PRIVATE minic_bytecode)
@@ -190,7 +191,11 @@ if(BUILD_TESTING)
                         bytecode_entry_parameters bytecode_type_error bytecode_resolution_error
                         bytecode_syntax_error bytecode_lexical_error bytecode_missing_file
                         bytecode_missing_argument bytecode_extra_argument
-                        run_optimization bytecode_optimization)
+                        run_optimization bytecode_optimization
+                        arrays ast_arrays resolve_arrays check_arrays bytecode_arrays run_arrays
+                        run_array_bounds run_array_error run_array_order
+                        check_array_length check_array_index check_array_value
+                        ast_arrays_syntax_only resolve_arrays_names_only)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"

@@ -72,6 +72,7 @@ cmake --build build
 ./build/minic --run-vm examples/factorial.mc
 ./build/minic --bytecode-opt examples/optimization.mc
 ./build/minic --run-vm-opt examples/optimization.mc
+./build/minic --run-vm-opt examples/arrays.mc
 ctest --test-dir build --output-on-failure
 ```
 
@@ -82,6 +83,7 @@ The C++ tests compare tokens, AST structure, source positions, symbol tables, na
 Compiler tests analyze instruction operands and stack types across control flow without executing bytecode.
 VM tests compare execution values, source error positions, diagnostics, and limits with the interpreter.
 Optimization tests also compare optimized bytecode with both execution engines and require fewer instructions in selected examples.
+Array tests compare initialization, bounds, evaluation order, recursion, and source limits in all three engines.
 The command tests compare output, diagnostics, and exit codes.
 CMake enables `-Wall -Wextra -Wpedantic` for Clang and GCC, including test targets.
 
@@ -92,16 +94,16 @@ Both use compiler instrumentation and add no project dependency.
 From the repository root, create a separate Debug build with Clang:
 
 ```bash
-cmake -S . -B build-optimizer-sanitize \
+cmake -S . -B build-arrays-sanitize \
   -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' \
   -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
-cmake --build build-optimizer-sanitize
+cmake --build build-arrays-sanitize
 ASAN_OPTIONS=halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 \
-  ctest --test-dir build-optimizer-sanitize --output-on-failure
+  ctest --test-dir build-arrays-sanitize --output-on-failure
 ```
 
-The phase 10 validation passes all 350 tests in both normal and sanitizer builds on Apple Clang 17.
+The phase 11 validation passes all 398 tests in both normal and sanitizer builds on Apple Clang 17.
 Both builds compile without warnings.
 Build directories remain outside version control.
 

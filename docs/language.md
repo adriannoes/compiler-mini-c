@@ -766,6 +766,10 @@ The optimizer treats element checks, reads, and writes as barriers and retains t
 
 Syntax, bindings, types, bytecode, and execution support these rules in all three engines.
 The existing commands and public scalar `Value` contract remain unchanged for programs without arrays.
+The [array example](../examples/arrays.mc) returns `10` in all three engines.
+The [array-error example](../examples/array_error.mc) reads an element without a value and fails at line 5, column 10.
+Command fixtures cover tokens, AST data, bindings, types, both disassemblies, and all execution modes.
+The syntax-only and names-only commands also accept invalid lengths and index types until type analysis checks them.
 
 ## Planned language scope
 
