@@ -247,6 +247,63 @@ On failure, it prints no AST, writes a diagnostic to standard error, and returns
 Diagnostics use `file:line:column: error: message`.
 The existing `--tokens` mode performs no parsing and preserves its output, diagnostics, and exit codes.
 
+## Phase 4 name rules
+
+Name resolution connects each name use to its declaration.
+These rules define the approved phase 4 scope without changing the grammar.
+The front-end library provides the symbol table. AST traversal and the resolution command remain pending.
+
+### Scopes and declarations
+
+A scope contains declarations and links to an enclosing scope.
+The global scope contains function names only.
+Each function has a separate child scope for its parameters and outer body.
+Parameters and declarations in that body share the same scope.
+Each nested block creates a child scope. An `if` or `while` creates no scope without a block.
+
+Lookup searches the current scope before its enclosing scopes.
+Shadowing means that an inner declaration hides an outer declaration with the same name.
+Mini-C permits shadowing, including a local name that hides a function.
+Declarations in separate functions or sibling blocks remain isolated.
+Names remain case sensitive.
+
+A second declaration in the same scope is an error, regardless of its written type.
+This rule rejects duplicate functions, duplicate parameters, and a local declaration that repeats a parameter in the outer body.
+A nested block can declare a name that hides that parameter.
+Functions, parameters, and variables share one namespace, which is one set of names per scope.
+There are no built-in functions or function overloads.
+
+### Visibility and uses
+
+The resolver first registers every function name in source order.
+Function names are visible throughout the program, including before their definitions.
+This permits recursion and mutual recursion without function prototypes.
+The resolver then visits each function body in source order.
+
+A local declaration becomes visible before the resolver visits its initializer.
+In `int x = x;`, the initializer refers to the new variable, including when another `x` exists outside the block.
+Name resolution accepts this reference without determining whether the variable holds an initialized value.
+Before a local declaration, lookup can still find an outer declaration.
+Without an outer declaration, that earlier use is an undeclared-name error.
+
+A read or assignment target must resolve to a variable or parameter.
+A named call must resolve to a function.
+Lookup does not skip a nearer declaration of a different category.
+For example, a variable that hides a function prevents calls to that function through the hidden name.
+The resolver visits arguments and all other expressions without evaluation.
+
+### Errors and limits
+
+Name resolution stops at the first error and returns no partial result.
+The resolver detects duplicate functions before body analysis.
+Other errors follow the body traversal order, with assignment targets before values and callees before arguments.
+Diagnostics identify the undeclared use, invalid category use, or second declaration.
+
+The parser and `--ast` remain syntax-only operations.
+Phase 4 does not compare Mini-C types, count arguments, require matching returns, or impose numeric limits.
+It does not analyze definite initialization, require `main`, or execute the program.
+Type syntax, including `void` parameters and variables, remains unvalidated.
+
 ## Planned language scope
 
 The following language scope grows phase by phase (see [roadmap.md](roadmap.md)):

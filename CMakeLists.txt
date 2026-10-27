@@ -14,6 +14,7 @@ add_library(minic_frontend
   src/ast_printer.cpp
   src/lexer.cpp
   src/parser.cpp
+  src/symbol_table.cpp
   src/token.cpp
 )
 target_include_directories(minic_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -24,6 +25,12 @@ target_link_libraries(minic PRIVATE minic_frontend)
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_symbol_table_tests tests/symbol_table_test.cpp)
+  target_link_libraries(minic_symbol_table_tests PRIVATE minic_frontend)
+  foreach(case IN ITEMS declarations scopes redeclarations stable_ids)
+    add_test(NAME symbols.${case} COMMAND minic_symbol_table_tests ${case})
+  endforeach()
+
   add_executable(minic_parser_tests tests/parser_test.cpp)
   target_link_libraries(minic_parser_tests PRIVATE minic_frontend)
 

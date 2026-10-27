@@ -155,6 +155,36 @@ Syntax validation accepts undeclared names, invalid Mini-C types, and arbitrary 
 The parser and printer use recursive calls, so deeply nested input depends on the available C++ call stack.
 Execution, name resolution, numeric conversion, and Mini-C type analysis remain outside phase 2.
 
+## Symbol table and ownership
+
+`src/symbol_table.hpp` defines `SymbolTable`, which owns vectors of symbols and scopes.
+A symbol records its name, category, source position, declaring scope, and borrowed AST declaration.
+The declaration uses a variant of pointers to `FunctionDecl`, `Parameter`, or `VarDecl`.
+The table owns copies of names and positions.
+The AST retains ownership of declaration nodes.
+
+`SymbolId` and `ScopeId` contain vector indices with separate C++ types.
+The identifiers remain stable when the vectors grow or the table moves.
+References to vector elements do not have that guarantee.
+Callers must retain identifiers instead of element references across table changes.
+The AST must remain alive, unmodified, and unmoved while callers use its borrowed declarations.
+
+Scope zero is the global scope.
+Each child scope records its category, source position, parent identifier, and a name-to-symbol hash map.
+Lookup examines the current scope before each parent.
+Insertion rejects a duplicate in that scope with `ResolveError`, which carries the second declaration position.
+Parent lookup, shadowing, and sibling isolation use the same table operations.
+
+The approved [name rules](language.md#phase-4-name-rules) define function and local visibility.
+The next increment will connect those rules to AST traversal through `resolve_names(const Program&)`.
+Its `NameResolution` result will own the table and separate use-to-symbol bindings.
+Each binding will identify a borrowed expression, its symbol, and its read, write, or call role.
+This costs auxiliary storage but preserves syntax-only parsing and supplies declarations for later type analysis.
+
+The final increment will add `print_resolution(const NameResolution&)` and `--resolve <file>`.
+Output will use vector order instead of hash-map iteration, so symbol identifiers and text remain deterministic.
+The existing token and AST modes will not invoke the new analysis.
+
 ## Planned pipeline
 
 ```text

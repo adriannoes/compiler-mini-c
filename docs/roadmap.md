@@ -147,9 +147,23 @@ Lookup terms: `FIRST set`, `FOLLOW set`, `LL(1) grammar`, `left factoring`, `shi
 
 ## Phase 4: Symbol table and scopes
 
+Status: in progress.
+
+The approved name rules live in [language.md](language.md#phase-4-name-rules).
+Table ownership and the separate binding design live in [architecture.md](architecture.md#symbol-table-and-ownership).
+Delivery uses three local increments:
+
+1. Symbol table, parent scopes, stable identifiers, focused tests, and the approved design record.
+2. AST traversal, declaration visibility, use bindings, category errors, and resolver tests.
+3. Resolution output, command integration, examples, command tests, and sanitizer validation.
+
+Increment 1 is complete: the table owns symbols and scopes while declarations remain in the AST.
+Four new test groups cover declarations, lookup and isolation, redeclarations, and identifier stability.
+The resolver API and command remain pending. Phase 4 is not complete.
+
 Lookup terms: `symbol table`, `environment`, `lexical scope`, `static scope`, `nested scopes`, `shadowing`, `name resolution`, `declaration`, `binding`
 
-- [ ] Nested environments
+- [x] Nested environments
 - [ ] Errors for undeclared / redeclared names
 - [ ] Tests for scope edge cases
 

@@ -55,6 +55,10 @@ See [docs/language.md](docs/language.md) for lexical rules, grammar, precedence,
 Phase 3 study notes include worked FIRST/FOLLOW sets, LL(1) decisions, and a shift/reduce trace.
 They compare LR constructions and parser-generator choices in [docs/theory-parsing.md](docs/theory-parsing.md).
 
+Phase 4 starts with a symbol table and nested scopes in the front-end library.
+The approved [name rules](docs/language.md#phase-4-name-rules) record visibility, shadowing, and redeclaration policies.
+Name resolution through the AST and a command for its output remain pending.
+
 ## Build and use
 
 From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
@@ -103,10 +107,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 52 tests cover tokens, source positions, lexical errors, AST structure, syntax errors, and command behavior.
+The 56 tests cover tokens, positions, lexical errors, AST structure, syntax errors, symbol tables, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-All 52 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+The original 52 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -133,7 +137,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 1 | Lexer (+ tests) | done |
 | 2 | Recursive-descent parser | done |
 | 3 | Parsing theory (First/Follow, bottom-up) | done |
-| 4 | Symbol table / scopes | pending |
+| 4 | Symbol table / scopes | in progress |
 | 5 | Type checking | pending |
 | 6 | Tree-walk interpreter (stage A) | pending |
 | 7 | Functions and control flow | pending |
