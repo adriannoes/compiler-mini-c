@@ -15,6 +15,7 @@ add_library(minic_frontend
   src/lexer.cpp
   src/name_resolution.cpp
   src/parser.cpp
+  src/resolution_printer.cpp
   src/symbol_table.cpp
   src/token.cpp
 )
@@ -62,7 +63,11 @@ if(BUILD_TESTING)
                         unterminated_comment missing_argument language invalid_logical
                         ast_hello ast_expressions ast_empty ast_syntax_error ast_lexical_error
                         ast_missing_file ast_missing_argument ast_extra_argument ast_calls
-                        ast_control_flow ast_language ast_eof_error tokens_invalid_syntax)
+                        ast_control_flow ast_language ast_eof_error tokens_invalid_syntax
+                        resolve_hello resolve_scopes resolve_recursion resolve_empty
+                        resolve_undeclared resolve_redeclared resolve_category
+                        resolve_syntax_error resolve_lexical_error resolve_missing_file
+                        resolve_missing_argument resolve_extra_argument resolve_names_only)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"

@@ -252,7 +252,7 @@ The existing `--tokens` mode performs no parsing and preserves its output, diagn
 Name resolution connects each name use to its declaration.
 These rules define the approved phase 4 scope without changing the grammar.
 The front-end library provides the symbol table and `resolve_names` analysis.
-The resolution command remains pending.
+The `--resolve` command prints the result after the complete analysis succeeds.
 
 ### Scopes and declarations
 
@@ -304,6 +304,32 @@ The parser and `--ast` remain syntax-only operations.
 Phase 4 does not compare Mini-C types, count arguments, require matching returns, or impose numeric limits.
 It does not analyze definite initialization, require `main`, or execute the program.
 Type syntax, including `void` parameters and variables, remains unvalidated.
+
+### Resolution command
+
+After the build, operate `./build/minic --resolve examples/scopes.mc` from the repository root.
+The command completes lexing, then parsing, then name resolution.
+Errors in an earlier stage take priority over errors in a later stage anywhere in the file.
+The command returns `0` with the complete resolution output on standard output.
+It returns `1` with no standard output for a lexical, syntax, resolution, file, or argument error.
+
+Resolution diagnostics use `file:line:column: error: message` on standard error.
+An undeclared use reports `Undeclared name "x".`.
+A second declaration reports `Name "x" is already declared in this scope.`.
+A category mismatch reports that the name does not refer to a function, or to a variable or parameter.
+The messages identify source names without interpreting their types.
+
+Output starts with `Resolution`, then lists scopes, symbols, and bindings.
+Identifiers start at zero and apply only to that analysis result.
+All functions receive symbol identifiers first, in source order.
+Parameters and local declarations then receive identifiers during body traversal.
+Bindings appear in traversal order, with `Read`, `Write`, or `Call` as the use category.
+
+A scope line shows its identifier, category, optional parent identifier, and source position.
+The global position is `@1:1`. A function scope uses its function name position, and a block scope uses its opening brace.
+A symbol line shows its identifier, category, quoted name, declaring scope, and declaration position.
+A binding line shows the use category, quoted name, use scope, use position, selected symbol, and declaration position.
+The complete examples live in [scopes.resolution](../tests/scopes.resolution) and [recursion.resolution](../tests/recursion.resolution).
 
 ## Planned language scope
 

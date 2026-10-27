@@ -29,10 +29,12 @@ The command reads a source file and passes its text to `minic::lex`.
 The lexer separates the text into tokens, which are units such as names and numbers.
 The `--tokens` command prints the tokens after the lexer succeeds.
 The `--ast` command passes tokens to the parser and prints the complete tree after syntax parsing succeeds.
+The `--resolve` command also resolves names and prints scopes, symbols, and bindings after the analysis succeeds.
 
 ```text
 source (.mc) -> minic::lex -> tokens -> --tokens output
                                 -> minic::parse -> Program -> --ast output
+                                                          -> minic::resolve_names -> NameResolution -> --resolve output
 ```
 
 `src/token.hpp` defines token types and source positions.
@@ -53,7 +55,8 @@ The lexer throws `LexError` at the first unsupported character or unterminated b
 The command adds the file path and prints the diagnostic to standard error.
 The command emits no partial token list on failure.
 
-The `minic_frontend` CMake library contains tokens, the lexer, the parser, and the AST printer.
+The `minic_frontend` CMake library contains tokens, the lexer, the parser, the symbol table, and name resolution.
+It also contains the AST and resolution printers.
 Both `minic` and the unit tests link to that library.
 CTest also runs command tests against the built executable.
 See [tech-stack.md](tech-stack.md) for build and test commands and [language.md](language.md) for lexical rules.
@@ -121,7 +124,7 @@ Binary children appear in left-to-right order, and assignment children appear as
 The command prints no partial tree if lexing or parsing fails.
 Control-flow labels identify `Condition`, `Then`, `Else`, and `Body` children.
 The `Else` label appears only when an else branch exists.
-Every example has a fixture under `tests/` that specifies its complete expected AST output.
+Each parser example has a fixture under `tests/` that specifies its complete expected AST output.
 
 ## Parser learning note
 
@@ -193,9 +196,15 @@ Local insertion precedes initializer traversal, so `int x = x;` binds to the new
 An undeclared use or category mismatch throws `ResolveError` before the caller receives a result.
 The resolver does not inspect `TypeSyntax` or convert integer text.
 
-The final increment will add `print_resolution(const NameResolution&)` and `--resolve <file>`.
-Output will use vector order instead of hash-map iteration, so symbol identifiers and text remain deterministic.
-The existing token and AST modes will not invoke the new analysis.
+`print_resolution(const NameResolution&)` returns a string for the `--resolve <file>` command.
+Output uses vector order instead of hash-map iteration, so symbol identifiers and text remain deterministic.
+The printer shows each use position and its selected declaration position.
+The existing token and AST modes do not invoke the new analysis.
+
+The command keeps the parsed `Program` alive until resolution output completes.
+It completes each analysis stage before the next stage starts and prints no partial result after an error.
+The resolver uses recursive traversal, so deeply nested input depends on the available C++ call stack.
+The borrowed AST lifetime remains a caller responsibility in the C++ API.
 
 ## Name resolution learning note
 
@@ -204,6 +213,18 @@ An outer lookup permits access to parameters and function names from nested bloc
 The resolver records the selected declaration at each use, so a later local declaration cannot change an earlier binding.
 A completed scope map alone cannot preserve that distinction.
 Separate bindings keep the earlier choice available to later compiler stages.
+
+## Name resolution validation and limits
+
+Phase 4 adds four symbol-table test groups, eleven resolver groups, and thirteen command tests.
+The complete suite contains 80 CTest tests, including the original parser and token contracts.
+All 80 pass in both normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
+
+The command fixtures compare complete output, diagnostics, and exit codes.
+The resolver tests inspect actual declarations and use bindings for shadowing, visibility, category rules, and scope isolation.
+They preserve syntax-only parsing and permit type-invalid programs when their names resolve.
+Phase 4 does not establish that a program can execute safely or pass later type analysis.
 
 ## Planned pipeline
 

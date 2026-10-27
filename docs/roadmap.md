@@ -147,7 +147,7 @@ Lookup terms: `FIRST set`, `FOLLOW set`, `LL(1) grammar`, `left factoring`, `shi
 
 ## Phase 4: Symbol table and scopes
 
-Status: in progress.
+Status: complete.
 
 The approved name rules live in [language.md](language.md#phase-4-name-rules).
 Table ownership and the separate binding design live in [architecture.md](architecture.md#symbol-table-and-ownership).
@@ -159,18 +159,24 @@ Delivery uses three local increments:
 
 Increment 1 is complete: the table owns symbols and scopes while declarations remain in the AST.
 Four new test groups cover declarations, lookup and isolation, redeclarations, and identifier stability.
+
 Increment 2 is complete: `resolve_names` returns separate bindings for reads, assignment targets, and calls.
 Eleven resolver test groups cover name errors, scope isolation, declaration order, category rules, and recursive function visibility.
 They also cover traversal, AST preservation, result moves, and the separation from type analysis.
-The resolution command and final sanitizer validation remain pending. Phase 4 is not complete.
+
+Increment 3 is complete: `--resolve` prints deterministic scopes, symbols, and read, write, or call bindings.
+The scope and recursion examples have complete expected resolution output under `tests/`.
+Thirteen new command tests cover successful output, name errors, category errors, stage priority, file errors, and argument errors.
+All 80 tests pass in both normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings.
+The prose scan reports no findings. Type analysis and execution remain outside phase 4.
 
 Lookup terms: `symbol table`, `environment`, `lexical scope`, `static scope`, `nested scopes`, `shadowing`, `name resolution`, `declaration`, `binding`
 
 - [x] Nested environments
 - [x] Errors for undeclared / redeclared names
 - [x] Tests for scope edge cases
-- [ ] Deterministic resolution command and examples
-- [ ] Final normal and sanitizer validation
+- [x] Deterministic resolution command and examples
+- [x] Final normal and sanitizer validation
 
 ## Phase 5: Semantic analysis / types
 

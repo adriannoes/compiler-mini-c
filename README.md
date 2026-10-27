@@ -58,7 +58,7 @@ They compare LR constructions and parser-generator choices in [docs/theory-parsi
 Phase 4 provides a symbol table, nested scopes, and `minic::resolve_names` in the front-end library.
 The approved [name rules](docs/language.md#phase-4-name-rules) record visibility, shadowing, and redeclaration policies.
 The analysis returns separate declaration bindings without modifying the AST.
-A command for its output remains pending.
+The `--resolve` command prints scopes, symbols, and the declaration selected for each name use.
 
 ## Build and use
 
@@ -74,6 +74,8 @@ cmake --build build
 ./build/minic --ast examples/calls.mc
 ./build/minic --ast examples/control_flow.mc
 ./build/minic --ast examples/lexer.mc
+./build/minic --resolve examples/scopes.mc
+./build/minic --resolve examples/recursion.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -98,7 +100,16 @@ The [expression example](examples/expressions.mc) demonstrates precedence, group
 Its expected tree lives in [tests/expressions.ast](tests/expressions.ast).
 The [call example](examples/calls.mc) adds parameters, declarations, nested calls, and an empty statement.
 The [control-flow example](examples/control_flow.mc) demonstrates the nearest-`if` rule for `else` and a braced loop.
-Every example has an expected AST under `tests/`.
+The expected ASTs for parser examples live under `tests/`.
+
+The [scope example](examples/scopes.mc) demonstrates nested scopes, shadowing, and a call before its function definition.
+The [recursion example](examples/recursion.mc) demonstrates mutual recursion without a `main` function.
+Their complete expected resolution output lives in [tests/scopes.resolution](tests/scopes.resolution) and [tests/recursion.resolution](tests/recursion.resolution).
+`Read`, `Write`, and `Call` lines identify both the use position and its declaration symbol.
+
+Name resolution does not analyze types, argument counts, return compatibility, or definite initialization.
+For example, `int x = x;` resolves to its own declaration without establishing that `x` holds an initialized value.
+The existing expression example remains valid with `--ast` but fails with `--resolve` because `left` and `right` have no declarations.
 
 ## Tests
 
@@ -108,10 +119,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 67 tests cover tokens, positions, lexical errors, AST structure, syntax errors, name resolution, and command behavior.
+The 80 tests cover tokens, positions, lexical errors, AST structure, syntax errors, name resolution, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-The original 52 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+All 80 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -138,7 +149,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 1 | Lexer (+ tests) | done |
 | 2 | Recursive-descent parser | done |
 | 3 | Parsing theory (First/Follow, bottom-up) | done |
-| 4 | Symbol table / scopes | in progress |
+| 4 | Symbol table / scopes | done |
 | 5 | Type checking | pending |
 | 6 | Tree-walk interpreter (stage A) | pending |
 | 7 | Functions and control flow | pending |
@@ -150,5 +161,6 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 13 | Wrap-up / portfolio polish | pending |
 
 Phase 2 delivers syntax and AST output, and phase 3 records the related theory.
-Semantic analysis and execution remain in their later roadmap phases.
+Phase 4 adds name resolution without changing those syntax contracts.
+Type analysis and execution remain in their later roadmap phases.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.
