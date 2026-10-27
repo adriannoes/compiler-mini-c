@@ -102,7 +102,7 @@ struct KnownValue {
   std::size_t producer;
 };
 
-bool fold_constants(BytecodeFunction& function) {
+bool local_rewrites(BytecodeFunction& function) {
   const auto entries = leaders(function);
   Edits edits(function.code.begin(), function.code.end());
   std::vector<KnownValue> known;
@@ -122,6 +122,32 @@ bool fold_constants(BytecodeFunction& function) {
       } else {
         known.clear();
       }
+      continue;
+    }
+    if (instruction.opcode == OpCode::Pop && !known.empty()) {
+      edits[known.back().producer].reset();
+      edits[i].reset();
+      known.pop_back();
+      changed = true;
+      continue;
+    }
+    if ((instruction.opcode == OpCode::JumpIfFalse || instruction.opcode == OpCode::JumpIfTrue) &&
+        !known.empty() && std::holds_alternative<bool>(known.back().value)) {
+      const bool taken = std::get<bool>(known.back().value) == (instruction.opcode == OpCode::JumpIfTrue);
+      edits[known.back().producer].reset();
+      if (taken) {
+        edits[i] = Instruction{OpCode::Jump, instruction.operand, instruction.location};
+      } else {
+        edits[i].reset();
+      }
+      known.clear();
+      changed = true;
+      continue;
+    }
+    if (instruction.opcode == OpCode::Jump && instruction.operand == i + 1) {
+      edits[i].reset();
+      known.clear();
+      changed = true;
       continue;
     }
     const bool unary = instruction.opcode == OpCode::Negate || instruction.opcode == OpCode::Not;
@@ -160,12 +186,77 @@ bool fold_constants(BytecodeFunction& function) {
   return changed;
 }
 
+bool thread_jumps(BytecodeFunction& function) {
+  bool changed = false;
+  for (auto& instruction : function.code) {
+    if (!jump(instruction.opcode)) {
+      continue;
+    }
+    auto target = instruction.operand;
+    for (std::size_t hops = 0; hops < function.code.size(); ++hops) {
+      const auto& next = function.code.at(target);
+      if (next.opcode != OpCode::Jump || next.operand == target) {
+        break;
+      }
+      target = next.operand;
+    }
+    if (target != instruction.operand) {
+      instruction.operand = target;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+bool remove_unreachable(BytecodeFunction& function) {
+  if (function.code.empty()) {
+    return false;
+  }
+  std::vector<bool> reachable(function.code.size(), false);
+  std::vector<std::size_t> pending{0};
+  while (!pending.empty()) {
+    const auto offset = pending.back();
+    pending.pop_back();
+    if (reachable.at(offset)) {
+      continue;
+    }
+    reachable[offset] = true;
+    const auto& instruction = function.code[offset];
+    if (jump(instruction.opcode)) {
+      pending.push_back(instruction.operand);
+    }
+    if (instruction.opcode != OpCode::Jump && !terminal(instruction.opcode)) {
+      if (offset + 1 == function.code.size()) {
+        throw std::logic_error("Optimized control flow leaves the function.");
+      }
+      pending.push_back(offset + 1);
+    }
+  }
+  Edits edits(function.code.begin(), function.code.end());
+  bool changed = false;
+  for (std::size_t i = 0; i < edits.size(); ++i) {
+    if (!reachable[i]) {
+      edits[i].reset();
+      changed = true;
+    }
+  }
+  if (changed) {
+    compact(function, edits);
+  }
+  return changed;
+}
+
 }  // namespace
 
 BytecodeProgram optimize_bytecode(const BytecodeProgram& program) {
   auto result = program;
   for (auto& function : result.functions) {
-    fold_constants(function);
+    bool changed;
+    do {
+      changed = local_rewrites(function);
+      changed = thread_jumps(function) || changed;
+      changed = remove_unreachable(function) || changed;
+    } while (changed);
   }
   return result;
 }

@@ -695,9 +695,11 @@ Step-limit and call-depth behavior must agree with the original VM and interpret
 Calls, assignments, local reads, declaration resets, and other possible effects end local constant tracking.
 The optimizer does not remove variable reads or apply identities that can suppress errors, such as replacing `x * 0` with zero.
 
-The next increment will simplify constant branches, remove unreachable code, and apply small local instruction rewrites.
-Those transformations must respect block entries and remap absolute jump targets after code removal.
+The optimizer simplifies constant branches, removes unreachable code, and applies small local instruction rewrites.
+Those transformations respect block entries and remap absolute jump targets after code removal.
 Unreachable source steps can disappear because execution never visits them.
+Discarding a known constant is safe only when its conversion succeeds. Discarded calls and variable reads retain their original behavior.
+Functions remain available as named entries even when the selected entry never calls them.
 The planned `--bytecode-opt` and `--run-vm-opt` commands will expose optimized output and execution separately from the existing commands.
 Global constant propagation, store elimination, language changes, and binary serialization remain outside this phase.
 

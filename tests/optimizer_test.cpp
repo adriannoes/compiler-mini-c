@@ -193,6 +193,95 @@ void differential_limits() {
   }
 }
 
+void constant_branches() {
+  const std::string text = "int main() { if (1 + 2 == 3) return 42; else return 1 / 0; }";
+  const auto optimized = minic::optimize_bytecode(compile(text));
+  require(count(optimized.functions[0], OpCode::Divide) == 0, "Expected the unreachable arithmetic to disappear.");
+  require(count(optimized.functions[0], OpCode::JumpIfFalse) == 0, "Expected a known condition to simplify.");
+  compare(text, 60);
+  compare("int main() { if (3 < 2) return 1 / 0; return 7; }", 40);
+  compare("bool loop() { return loop(); } bool main() { return true || loop(); }", 40);
+  compare("bool main() { return false && (1 / 0 == 0) || true; }", 40);
+}
+
+void unreachable() {
+  const auto optimized = minic::optimize_bytecode(compile("int main() { return 1; 1 / 0; return 2; }"));
+  require(count(optimized.functions[0], OpCode::Divide) == 0, "Expected code after a return to disappear.");
+  require(count(optimized.functions[0], OpCode::Return) == 1, "Expected one reachable return.");
+  compare("int main() { return 1; 1 / 0; return 2; }", 30);
+  compare("void main() { return; 9223372036854775808; }", 20);
+}
+
+void discarded_values() {
+  const std::string text = "int main() { (1 + 2); true; -7; return 42; }";
+  const auto optimized = minic::optimize_bytecode(compile(text));
+  require(count(optimized.functions[0], OpCode::LoadConstant) == 1 && count(optimized.functions[0], OpCode::Pop) == 0,
+          "Expected unused successful constants to disappear.");
+  compare(text, 60);
+  compare("int main() { 9223372036854775808; return 42; }", 30);
+  compare("int main() { 1 / 0; return 42; }", 30);
+}
+
+void jump_cleanup() {
+  const std::string text = "int main() { if (true) { if (true) return 1; else return 2; } else return 3; }";
+  const auto optimized = minic::optimize_bytecode(compile(text));
+  require(count(optimized.functions[0], OpCode::Jump) == 0 && count(optimized.functions[0], OpCode::JumpIfFalse) == 0,
+          "Expected redundant jumps to disappear.");
+  compare(text, 60);
+  compare("int main() { int x = 0; if (false) x = 1; else if (true) x = 2; return x; }", 60);
+  const std::string logic = "bool main() { return (false && true) || (true && !false); }";
+  const auto simplified = minic::optimize_bytecode(compile(logic));
+  require(count(simplified.functions[0], OpCode::Jump) == 0 && count(simplified.functions[0], OpCode::JumpIfFalse) == 0 &&
+              count(simplified.functions[0], OpCode::JumpIfTrue) == 0, "Expected constant logical paths to become linear.");
+  compare(logic, 60);
+}
+
+void loop_limits() {
+  compare("void main() { while (1 + 2 == 3) { 2 + 3; } }", 100);
+  compare("int main() { while (false) { 1 / 0; } return 2 + 3; }", 50);
+  compare("int main() { int i = 0; while (i < 2) { if (true) { i = i + 1; } else return 1 / 0; } return i; }", 100);
+}
+
+void preserved_reads() {
+  const auto optimized = minic::optimize_bytecode(compile("int main() { int x; x; return 42; }"));
+  require(count(optimized.functions[0], OpCode::LoadLocal) == 1, "An unused local read can still fail.");
+  compare("int main() { int x; x; return 42; }", 30);
+  compare("int main() { int x; return x * 0; }", 30);
+  compare("int f() { return 1 / 0; } int main() { return 0 * f(); }", 30);
+  compare("int main() { return 0 * (1 / 0); }", 30);
+}
+
+void call_arguments() {
+  const auto optimized = minic::optimize_bytecode(compile("int f(int n) { return n; } int main() { f(2 + 3); return 1; }"));
+  require(count(optimized.functions[1], OpCode::Call) == 1, "A discarded call result must retain the call.");
+  compare("void f() { int x = 1 / 0; } int main() { f(); return 42; }", 40);
+  compare("int pair(int a, int b) { return a * 10 + b; } "
+          "int main() { int x = 0; return pair(x = x + 1, x = x + 1); }", 60);
+}
+
+void all_entries() {
+  const auto optimized = minic::optimize_bytecode(compile("int first() { return 2 + 3; } int second() { return 6 * 7; }"));
+  require(optimized.functions.size() == 2 && optimized.functions[0].name == "first" && optimized.functions[1].name == "second",
+          "Expected all named entries to remain available.");
+  require(std::get<std::int64_t>(minic::execute_bytecode(optimized, "first")) == 5 &&
+              std::get<std::int64_t>(minic::execute_bytecode(optimized, "second")) == 42,
+          "Expected independent optimization of every function.");
+}
+
+void idempotence() {
+  for (const std::string text : {
+           "int main() { if (true) return 2 + 3; else return 1 / 0; }",
+           "bool main() { return false && (1 / 0 == 0) || true; }",
+           "void main() { while (1 + 2 == 3) { 4 * 5; } }",
+           "int main() { return 1; 9223372036854775808; }"}) {
+    const auto original = compile(text);
+    const auto first = minic::optimize_bytecode(original);
+    require(minic::print_bytecode(first) == minic::print_bytecode(minic::optimize_bytecode(first)),
+            "Expected optimization to reach a stable result.");
+    require(first.functions[0].code.size() <= original.functions[0].code.size(), "Optimization increased the instruction count.");
+  }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -201,6 +290,9 @@ int main(int argc, char** argv) {
       {"numeric_guards", numeric_guards}, {"step_markers", step_markers}, {"block_boundaries", block_boundaries},
       {"side_effects", side_effects}, {"branch_targets", branch_targets}, {"ownership", ownership},
       {"differential_limits", differential_limits},
+      {"constant_branches", constant_branches}, {"unreachable", unreachable}, {"discarded_values", discarded_values},
+      {"jump_cleanup", jump_cleanup}, {"loop_limits", loop_limits}, {"preserved_reads", preserved_reads},
+      {"call_arguments", call_arguments}, {"all_entries", all_entries}, {"idempotence", idempotence},
   };
   if (argc == 2) {
     for (const auto& test : cases) {

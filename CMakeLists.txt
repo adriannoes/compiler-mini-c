@@ -44,10 +44,13 @@ if(BUILD_TESTING)
   add_executable(minic_optimizer_tests tests/optimizer_test.cpp)
   target_link_libraries(minic_optimizer_tests PRIVATE minic_optimizer minic_vm)
   foreach(case IN ITEMS empty integer_folding boolean_folding numeric_guards step_markers
-                        block_boundaries side_effects branch_targets ownership differential_limits)
+                        block_boundaries side_effects branch_targets ownership differential_limits
+                        constant_branches unreachable discarded_values jump_cleanup loop_limits
+                        preserved_reads call_arguments all_entries idempotence)
     add_test(NAME optimization.${case} COMMAND minic_optimizer_tests ${case})
   endforeach()
   set_tests_properties(optimization.differential_limits PROPERTIES TIMEOUT 30)
+  set_tests_properties(optimization.loop_limits PROPERTIES TIMEOUT 10)
 
   add_executable(minic_vm_tests tests/vm_test.cpp)
   target_link_libraries(minic_vm_tests PRIVATE minic_vm)

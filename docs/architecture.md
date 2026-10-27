@@ -544,13 +544,13 @@ The format still defines no binary loader, optimizer, or compatibility version.
 The `minic_optimizer` library links to `minic_bytecode` and `minic_runtime`.
 `optimize_bytecode` copies the input and transforms each function independently.
 It preserves function order, signatures, locals, and source metadata. It adds no external dependency.
-The first increment provides local constant folding. Control-flow cleanup and command integration follow in later increments.
+The optimizer provides local constant folding, control-flow cleanup, and small instruction rewrites. Command integration follows in the final increment.
 
 A basic block is an instruction region with one entry.
 The optimizer marks function entry, jump targets, and instructions after jumps or returns as block entries.
 It tracks a suffix of known constant values and their producing instructions inside each block.
 `STEP` preserves that tracking without changing the abstract value stack.
-Any other instruction that is not a constant load or foldable operation ends the known suffix.
+Calls, local reads, local writes, and other unknown operations end the known suffix.
 Block entries also end tracking, so branch merges cannot borrow values from one predecessor.
 
 Successful unary and binary evaluations replace their producer loads and operation with one constant load.
@@ -558,16 +558,32 @@ The replacement occupies the operation position, while every interleaved `STEP` 
 The evaluator uses the same guarded numeric helpers as execution. A runtime error cancels that candidate without changing its original operations.
 This preserves literal range errors, arithmetic errors, and limit failures during execution.
 
-The pass marks removed instructions, copies the survivors, and maps old instruction indices to new indices.
-Removed targets map to the next surviving instruction. Surviving jumps receive the remapped target.
+The pass copies surviving instructions and maps old instruction indices to new indices.
+Targets at omitted instructions map to the next surviving instruction. Surviving jumps receive the remapped target.
 Each rewrite stays inside a block, so no additional entry can bypass required value producers.
 Folded constants append to the existing pool. Unused constants remain to avoid another pool-remapping pass.
 This copies bytecode and retains some unused constants, but keeps ownership and existing indices explicit.
 
-Ten optimization test groups cover integer and boolean folding, numeric failures, source steps, block entries, effects, jumps, and ownership.
+Constant boolean branches become unconditional jumps or fallthrough paths after consuming their known condition.
+A known constant and its discard can disappear together, but only after successful constant conversion.
+Local reads, calls, and potentially failing operations retain their behavior even when no later instruction consumes their result.
+Jump threading redirects a jump through chains of unconditional jumps without crossing source steps.
+An unconditional jump to its next instruction is redundant and disappears.
+
+Reachability analysis traverses successors from each function entry, with both successors for an unknown conditional branch.
+Only reachable instructions survive compaction, so unreachable source steps can disappear without changing execution counts.
+The pipeline repeats local rewrites, jump threading, and reachability cleanup until instructions and targets stop changing.
+Value rewrites and unreachable cleanup shrink the code, while jump threading resolves chains.
+Every function remains in source order, including functions that no other function calls.
+
+Nineteen optimization test groups cover constants, numeric failures, source steps, block entries, effects, jumps, ownership, and stable repeated optimization.
 Differential tests compare the interpreter, original VM, and optimized VM for values and exact runtime diagnostics.
 Eight programs at eighty step budgets and three call-depth limits provide 1920 limit combinations.
 Tests also require fewer value instructions in constant expressions and stable results from repeated optimization.
+
+Reachability asks whether control flow can visit an instruction.
+Liveness asks whether later code can read a value before another assignment replaces it.
+Store elimination needs liveness information and error analysis. The current optimizer preserves stores and performs no global constant propagation.
 
 ## Planned pipeline
 

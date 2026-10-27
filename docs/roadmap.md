@@ -365,15 +365,19 @@ Delivery uses three local increments:
 Increment 1 provides `optimize_bytecode` in `minic_optimizer` and ten test groups.
 Constant folding uses runtime helpers and retains operations that can fail during execution.
 The tests compare 1920 combinations of source programs and execution limits across all three execution paths.
-Control-flow cleanup, command integration, and final validation remain pending.
+
+Increment 2 adds constant branches, unreachable-code cleanup, discarded constants, jump threading, and redundant-jump cleanup.
+Nine additional test groups cover control flow, preserved reads and calls, entry selection, loop budgets, and stable repeated optimization.
+All functions and local metadata remain available. Only unreachable steps can disappear.
+Command integration and final validation remain pending.
 
 Lookup terms: `constant folding`, `constant propagation`, `dead code elimination`, `unreachable code`, `peephole optimization`, `local optimization`, `basic block`, `data-flow analysis`, `liveness analysis`
 
 - [x] Constant folding (bytecode)
-- [ ] Trivial dead-code / unreachable cleanup where easy
-- [ ] Small peep-hole passes on bytecode
+- [x] Trivial dead-code / unreachable cleanup where easy
+- [x] Small peep-hole passes on bytecode
 - [ ] Tests that optimized and unoptimized runs agree
-- [ ] Optional stretch: one data-flow idea in notes only (e.g. liveness intuition)
+- [x] Optional stretch: reachability and liveness notes, without a liveness implementation
 
 ## Phase 11: Optional language features (pick 1-2)
 

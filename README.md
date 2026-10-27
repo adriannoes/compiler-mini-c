@@ -83,9 +83,9 @@ It shares numeric rules and source step limits with the interpreter and uses exp
 The `--run-vm` command compiles the source and executes `main` on the VM.
 The [VM rules](docs/language.md#phase-9-vm-rules) define the approved execution contract.
 
-Phase 10 starts with `minic::optimize_bytecode` and local constant folding in owned bytecode.
+Phase 10 provides `minic::optimize_bytecode`, local constant folding, unreachable-code cleanup, and small instruction rewrites in owned bytecode.
 The [optimization rules](docs/language.md#phase-10-optimization-rules) preserve source steps, numeric failures, effects, and the original input.
-Control-flow cleanup and optimized commands remain in progress.
+Optimized commands remain in progress.
 
 ## Build and use
 
@@ -240,7 +240,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 290 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, and commands.
+The 299 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 The 280 tests from phase 9 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
