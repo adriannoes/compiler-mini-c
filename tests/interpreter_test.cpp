@@ -133,9 +133,85 @@ void numeric_errors() {
   }
 }
 
-void unsupported() {
-  expect_error("int f() { return 1; } int main() {\n  return f(); }", {2, 10},
-               "The interpreter does not support function calls.");
+void function_calls() {
+  expect_integer("int add(int a, int b) { return a + b; } int main() { return add(1, add(2, 3)); }", 6);
+  expect_integer("int main() { int x = f(); int f = 7; return x + f; } int f() { return 1; }", 8);
+  expect_integer("void noop() {} int main() { noop(); return 2; }", 2);
+}
+
+void parameters() {
+  expect_integer("int change(int a, int b) { a = 9; return b; } "
+                 "int main() { int x = 3; return change(x, x) + x; }", 6);
+  expect_boolean("bool flip(bool b) { b = !b; return b; } "
+                 "bool main() { bool b = false; bool changed = flip(b); return changed && !b; }", true);
+  expect_integer("int f(int n) { { int n = 10; n = 20; } return n; } int main() { return f(3); }", 3);
+}
+
+void argument_order() {
+  expect_integer("int pair(int a, int b) { return a * 10 + b; } "
+                 "int main() { int x = 0; int r = pair(x = x + 1, x = x + 1); return r * 10 + x; }", 122);
+  expect_integer("int identity(int n) { return n; } int main() { int x = 1; x = identity(x + 2); return x; }", 3);
+}
+
+void recursive_frames() {
+  expect_integer("int sum(int n) { int local = n * 10; if (n == 0) return local; "
+                 "int child = sum(n - 1); return local + n + child; } int main() { return sum(3); }", 66);
+  expect_integer("int factorial(int n) { if (n < 2) return 1; return n * factorial(n - 1); } "
+                 "int main() { return factorial(6); }", 720);
+}
+
+void mutual_recursion() {
+  expect_boolean("bool even(int n) { if (n == 0) return true; return odd(n - 1); } "
+                 "bool odd(int n) { if (n == 0) return false; return even(n - 1); } "
+                 "bool main() { return even(10) && odd(9); }", true);
+}
+
+void call_returns() {
+  expect_integer("int f() { while (true) { if (true) return 4; } return 0; } "
+                 "int main() { int x = f(); x = x + 1; return x; }", 5);
+  expect_integer("void f(int x) { while (true) { x = 99; return; } } "
+                 "int main() { int x = 1; f(x); return x; }", 1);
+  require(std::holds_alternative<std::monostate>(evaluate("void f() { return; } void main() { f(); }")),
+          "Expected a void call result to be discarded in the caller.");
+}
+
+void call_errors() {
+  expect_error("int divide(int n) {\n  return 1 / n;\n} int main() { return divide(0); }", {2, 12},
+               "The divisor is zero.");
+  expect_error("int f(int n) { int x; if (n == 0) {\n  return x; } x = n; return f(n - 1); } "
+               "int main() { return f(1); }", {2, 10}, "The variable \"x\" has no value.");
+}
+
+void expect_limit_error(std::string_view source, minic::ExecutionLimits limits,
+                        minic::SourceLocation location, const std::string& message) {
+  const auto program = minic::parse(minic::lex(source));
+  try {
+    minic::interpret(program, "main", limits);
+  } catch (const minic::RuntimeError& error) {
+    require(error.location.line == location.line && error.location.column == location.column &&
+                error.what() == message, "Unexpected execution limit error.");
+    return;
+  }
+  throw std::runtime_error("Expected an execution limit error.");
+}
+
+void call_depth() {
+  const std::string source = "int f() {\n  return f();\n} int main() { return f(); }";
+  expect_limit_error(source, {1000, 3}, {2, 10}, "The call depth limit was reached.");
+  expect_error(source, {2, 10}, "The call depth limit was reached.");
+  const auto simple = minic::parse(minic::lex("int main() { return 42; }"));
+  require(std::get<std::int64_t>(minic::interpret(simple, "main", {3, 1})) == 42,
+          "Expected the entry to count as one active frame.");
+  const auto nested = minic::parse(minic::lex("int id(int n) { return n; } int main() { return id(id(id(3))); }"));
+  require(std::get<std::int64_t>(minic::interpret(nested, "main", {100, 2})) == 3,
+          "Expected argument calls to finish before their enclosing call starts.");
+  expect_limit_error("int take(int x) { return x; } int main() { int x;\n  return take(x); }",
+                     {100, 1}, {2, 15}, "The variable \"x\" has no value.");
+}
+
+void shared_budget() {
+  expect_limit_error("void f() {} void main() { f(); f(); }", {6, 2}, {1, 10},
+                     "The execution step limit was reached.");
 }
 
 void conditionals() {
@@ -241,10 +317,13 @@ int main(int argc, char** argv) {
       {"scopes", scopes}, {"initialization", initialization}, {"evaluation_order", evaluation_order},
       {"short_circuit", short_circuit}, {"returns", returns}, {"void_returns", void_returns},
       {"entry_selection", entry_selection}, {"numeric_limits", numeric_limits}, {"numeric_errors", numeric_errors},
-      {"unsupported", unsupported}, {"skipped_nodes", skipped_nodes}, {"static_priority", static_priority},
+      {"function_calls", function_calls}, {"skipped_nodes", skipped_nodes}, {"static_priority", static_priority},
       {"ownership", ownership},
       {"conditionals", conditionals}, {"loops", loops}, {"loop_environments", loop_environments},
       {"control_returns", control_returns}, {"step_limits", step_limits},
+      {"parameters", parameters}, {"argument_order", argument_order}, {"recursive_frames", recursive_frames},
+      {"mutual_recursion", mutual_recursion}, {"call_returns", call_returns}, {"call_errors", call_errors},
+      {"call_depth", call_depth}, {"shared_budget", shared_budget},
   };
   if (argc == 2) {
     for (const auto& test : cases) {

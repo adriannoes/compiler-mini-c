@@ -36,12 +36,14 @@ if(BUILD_TESTING)
   target_link_libraries(minic_interpreter_tests PRIVATE minic_runtime)
   foreach(case IN ITEMS arithmetic booleans assignments scopes initialization evaluation_order
                         short_circuit returns void_returns entry_selection numeric_limits
-                        numeric_errors unsupported skipped_nodes static_priority ownership
-                        conditionals loops loop_environments control_returns step_limits)
+                        numeric_errors function_calls skipped_nodes static_priority ownership
+                        conditionals loops loop_environments control_returns step_limits
+                        parameters argument_order recursive_frames mutual_recursion call_returns
+                        call_errors call_depth shared_budget)
     add_test(NAME interpreter.${case} COMMAND minic_interpreter_tests ${case})
   endforeach()
 
-  set_tests_properties(interpreter.step_limits PROPERTIES TIMEOUT 10)
+  set_tests_properties(interpreter.step_limits interpreter.call_depth interpreter.shared_budget PROPERTIES TIMEOUT 10)
 
   add_executable(minic_runtime_tests tests/runtime_test.cpp)
   target_link_libraries(minic_runtime_tests PRIVATE minic_runtime)
@@ -111,7 +113,7 @@ if(BUILD_TESTING)
                         check_extra_argument check_empty
                         run_hello run_interpreter run_short_circuit run_void run_runtime_error
                         run_division_zero run_overflow run_literal_range run_minimum
-                        run_missing_entry run_entry_parameters run_unsupported_call
+                        run_missing_entry run_entry_parameters run_calls
                         run_conditional run_loop run_type_error
                         run_resolution_error run_syntax_error run_lexical_error
                         run_missing_file run_missing_argument run_extra_argument)

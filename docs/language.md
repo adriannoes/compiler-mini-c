@@ -434,7 +434,7 @@ An empty program also succeeds because the checker does not require `main`.
 
 The phase 6 interpreter evaluates expressions, declarations, assignments, blocks, empty statements, and returns.
 Phase 7 extends this foundation with conditions, loops, and function calls.
-Conditions and loops are available. Reached function calls remain unsupported until the next increment.
+Conditions, loops, function calls, and recursive activations are available.
 The value library, `interpret` API, and `--run` command provide this subset.
 
 ### Values and numeric limits
@@ -479,14 +479,13 @@ Thus, `int x = x;` passes static analysis but fails during execution.
 
 Assignment can initialize a variable declared without an initializer.
 Block exit removes the local environment, including when a return or error ends the block.
-A return propagates through nested blocks and ends entry execution.
+A return propagates through nested blocks and ends the current function.
 A `void` entry can also end without an explicit return.
 Statements after an executed return do not run, but they still require valid static analysis.
 
-Unsupported function calls produce errors only when execution reaches them.
-An unused helper function can contain calls if it passes static analysis.
-A skipped logical operand or a statement after a return does not trigger an unsupported-call error.
-Conditions and loops follow the phase 7 rules that follow.
+Function calls use the phase 7 frame rules.
+Skipped logical operands, unselected branches, and statements after a return do not trigger runtime errors or enter call frames.
+All source still requires valid static analysis, including code that execution never reaches.
 
 ### API and command contract
 
@@ -521,7 +520,7 @@ Runtime errors do not expose C++ overflow, read uninitialized C++ storage, or pr
 | Negative literal outside the range | Unary minus |
 | Arithmetic overflow or zero divisor | Operator |
 | Variable without a value | Name use |
-| Unsupported function call | Called function name |
+| Call-depth limit | Called function name |
 | Execution step limit | Next expression or statement |
 
 The caller receives `RuntimeError` for runtime failures through the C++ API.
@@ -532,7 +531,7 @@ Neither the API nor the command changes the source AST, name rules, type rules, 
 
 Phase 7 completes interpreter support for the existing functions and control-flow syntax.
 It preserves the grammar, lexical bindings, type rules, numeric behavior, and entry rules.
-Conditions, loops, and step limits are available. Function frames and calls remain pending.
+Conditions, loops, function frames, recursion, and execution limits are available.
 
 ### Conditions and loops
 
@@ -581,6 +580,7 @@ Static analysis does not consume the runtime budget.
 
 The step limit reports `The execution step limit was reached.` at the next node that would exceed the budget.
 The call-depth limit counts active frames, including the entry as depth one.
+It reports `The call depth limit was reached.` when another frame would exceed the limit.
 Its error identifies the called function name when another frame would exceed the limit.
 Arguments complete evaluation before the interpreter attempts to enter that frame.
 Limits stop nonterminating loops and recursion without changing the success output or failure status contract.

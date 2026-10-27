@@ -2,6 +2,7 @@
 
 #include "type_checker.hpp"
 
+#include <memory>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -11,6 +12,23 @@ namespace minic {
 namespace {
 
 using Environment = std::unordered_map<std::size_t, std::optional<Value>>;
+
+struct CallFrame {
+  std::vector<Environment> environments;
+};
+
+class FrameScope {
+ public:
+  explicit FrameScope(std::vector<std::unique_ptr<CallFrame>>& frames) : frames_(frames) {
+    frames_.push_back(std::make_unique<CallFrame>());
+  }
+  ~FrameScope() { frames_.pop_back(); }
+  FrameScope(const FrameScope&) = delete;
+  FrameScope& operator=(const FrameScope&) = delete;
+
+ private:
+  std::vector<std::unique_ptr<CallFrame>>& frames_;
+};
 
 class EnvironmentScope {
  public:
@@ -32,6 +50,8 @@ class Interpreter {
     for (std::size_t i = 0; i < symbols.size(); ++i) {
       if (const auto* declaration = std::get_if<const VarDecl*>(&symbols[i].declaration)) {
         declarations_.emplace(*declaration, i);
+      } else if (const auto* parameter = std::get_if<const Parameter*>(&symbols[i].declaration)) {
+        parameters_.emplace(*parameter, i);
       }
     }
   }
@@ -46,18 +66,31 @@ class Interpreter {
     if (!function->parameters.empty()) {
       throw RuntimeError(function->location, "The entry function \"" + entry + "\" must not have parameters.");
     }
-    step(function->body.location);
-    const auto returned = block(function->body);
+    return invoke(*function, {}, function->location);
+  }
+
+ private:
+  Value invoke(const FunctionDecl& function, const std::vector<Value>& arguments, SourceLocation call_location) {
+    if (frames_.size() == limits_.max_call_depth) {
+      throw RuntimeError(call_location, "The call depth limit was reached.");
+    }
+    const FrameScope frame(frames_);
+    const EnvironmentScope environment(frames_.back()->environments);
+    for (std::size_t i = 0; i < function.parameters.size(); ++i) {
+      const auto id = parameters_.at(&function.parameters[i]);
+      frames_.back()->environments.back().emplace(id, arguments.at(i));
+    }
+    step(function.body.location);
+    const auto returned = block_contents(function.body);
     if (returned) {
       return *returned;
     }
-    if (function->return_type.keyword != TokenKind::KwVoid) {
-      throw std::logic_error("A typed entry function ended without a return value.");
+    if (function.return_type.keyword != TokenKind::KwVoid) {
+      throw std::logic_error("A typed function ended without a return value.");
     }
     return Value{};
   }
 
- private:
   void step(SourceLocation location) {
     if (steps_ == limits_.max_steps) {
       throw RuntimeError(location, "The execution step limit was reached.");
@@ -65,13 +98,19 @@ class Interpreter {
     ++steps_;
   }
 
-  std::optional<Value>& slot(const Expr& expression) {
-    const auto* binding = analysis_.resolution().binding(expression);
-    if (!binding) {
+  const Binding& binding(const Expr& expression) const {
+    const auto* found = analysis_.resolution().binding(expression);
+    if (!found) {
       throw std::logic_error("The expression has no resolved binding.");
     }
-    for (auto environment = environments_.rbegin(); environment != environments_.rend(); ++environment) {
-      const auto found = environment->find(binding->symbol.index);
+    return *found;
+  }
+
+  std::optional<Value>& slot(const Expr& expression) {
+    const auto id = binding(expression).symbol.index;
+    auto& environments = frames_.back()->environments;
+    for (auto environment = environments.rbegin(); environment != environments.rend(); ++environment) {
+      const auto found = environment->find(id);
       if (found != environment->end()) {
         return found->second;
       }
@@ -127,8 +166,15 @@ class Interpreter {
     return value;
   }
 
-  Value evaluate(const CallExpr&, const Expr& source) {
-    throw RuntimeError(source.location, "The interpreter does not support function calls.");
+  Value evaluate(const CallExpr& node, const Expr& source) {
+    const auto& symbol = analysis_.resolution().table().symbol(binding(source).symbol);
+    const auto* function = std::get<const FunctionDecl*>(symbol.declaration);
+    std::vector<Value> arguments;
+    arguments.reserve(node.arguments.size());
+    for (const auto& argument : node.arguments) {
+      arguments.push_back(expression(*argument));
+    }
+    return invoke(*function, arguments, source.location);
   }
 
   std::optional<Value> statement(const Stmt& statement) {
@@ -139,7 +185,11 @@ class Interpreter {
   }
 
   std::optional<Value> block(const BlockStmt& block) {
-    const EnvironmentScope scope(environments_);
+    const EnvironmentScope scope(frames_.back()->environments);
+    return block_contents(block);
+  }
+
+  std::optional<Value> block_contents(const BlockStmt& block) {
     for (const auto& child : block.statements) {
       auto returned = statement(*child);
       if (returned) {
@@ -153,10 +203,10 @@ class Interpreter {
 
   std::optional<Value> execute(const VarDecl& node) {
     const auto id = declarations_.at(&node);
-    environments_.back().emplace(id, std::nullopt);
+    frames_.back()->environments.back().emplace(id, std::nullopt);
     if (node.initializer) {
       auto value = expression(*node.initializer);
-      environments_.back().at(id) = std::move(value);
+      frames_.back()->environments.back().at(id) = std::move(value);
     }
     return std::nullopt;
   }
@@ -194,7 +244,8 @@ class Interpreter {
 
   TypeAnalysis analysis_;
   std::unordered_map<const VarDecl*, std::size_t> declarations_;
-  std::vector<Environment> environments_;
+  std::unordered_map<const Parameter*, std::size_t> parameters_;
+  std::vector<std::unique_ptr<CallFrame>> frames_;
   ExecutionLimits limits_;
   std::size_t steps_ = 0;
 };

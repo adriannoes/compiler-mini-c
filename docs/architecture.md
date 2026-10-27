@@ -318,7 +318,7 @@ The interpreter borrows the AST during that call and returns an independent valu
 Block environments use resolved symbol identifiers and an explicit state for variables without values.
 This costs environment storage but preserves lexical bindings without changing AST nodes.
 
-The interpreter owns its `TypeAnalysis` during execution and builds an index from variable declarations to symbol identifiers.
+The interpreter owns its `TypeAnalysis` during execution and indexes variable and parameter declarations by symbol identifier.
 It uses the recorded bindings for reads and assignments without another search by source name.
 Each block creates an environment, and a scope guard ends its lifetime on normal exit, return, or error.
 Variable slots use `std::optional<Value>` so a missing value remains distinct from `void`.
@@ -328,7 +328,7 @@ Statement execution returns `std::optional<Value>` as a control signal.
 `std::nullopt` continues execution, while an engaged value propagates a return through nested blocks.
 An engaged `std::monostate` ends a `void` entry, unlike fallthrough without a return.
 Expressions evaluate their left operand before the right operand, and logical operators can skip the right operand.
-Reached calls still throw `RuntimeError` until the call-frame increment.
+Calls evaluate arguments before entering an isolated frame and return their values to the caller.
 Conditions select one branch, and loops reevaluate their condition before each body execution.
 
 The public call accepts temporary programs because its returned value contains no AST references.
@@ -338,7 +338,7 @@ No interpreter instance or environment escapes the call.
 `--run <file>` uses `main` as its entry and formats the returned value only after execution succeeds.
 An integer or boolean result ends with a newline, while a `void` result prints nothing.
 The process status remains `0` on success, independently of the entry result, and becomes `1` on failure.
-Function calls remain pending in phase 7, while conditions and loops execute their selected statements.
+Function calls, conditions, and loops execute using the existing static bindings and return signals.
 The existing analysis modes do not invoke execution.
 
 ## Interpreter learning note
@@ -360,9 +360,9 @@ They also cover repeated execution, AST preservation, and returned values that o
 Command tests compare exact result text, empty void output, positioned diagnostics, and process exit codes.
 The runtime-error example passes `--check` and fails with the expected uninitialized-read diagnostic in `--run`.
 
-The phase 6 runtime required an entry without parameters and reported reached calls, `if`, and `while` as unsupported.
-Phase 7 extends that execution subset without changing its numeric or initialization rules.
-The interpreter does not implement function frames, recursion, bytecode, or VM behavior.
+The runtime requires an entry without parameters and executes functions, conditions, loops, and recursion under phase 7 rules.
+Numeric and initialization rules remain unchanged.
+The interpreter does not implement bytecode or VM behavior.
 Recursive AST traversal remains limited by the available C++ call stack.
 
 ## Function execution and limits
@@ -378,11 +378,22 @@ A single counter charges expression and statement entry, including each function
 The interpreter compares the counter with its limit before incrementing it, so the counter cannot overflow.
 Budget exhaustion reports the next node position without evaluating it.
 
-The next increment will give each call an exclusively owned frame with a stable address.
-Each frame will own its environment stack, and lookup will remain inside that frame.
-This adds one allocation per call but keeps environment guards valid while nested calls grow the frame stack.
-Arguments will evaluate in the caller before parameter values enter the new frame.
-The interpreter will reuse its existing static analysis instead of repeating it for each activation.
+Each call owns a `CallFrame` through `std::unique_ptr` in a vector of active frames.
+The frame owns its environment stack, and lookup remains inside that frame.
+This adds one frame allocation per call and keeps environment guards valid while nested calls grow the frame vector.
+Arguments evaluate in the caller before parameter values enter the new frame.
+The interpreter reuses its existing static analysis instead of repeating it for each activation.
+
+A frame guard creates the activation, and an environment guard creates its shared parameter and outer-body environment.
+Parameters enter that environment as copied values before the body starts.
+The environment guard ends local lifetimes before the frame guard ends the activation on return or error.
+No variable-slot reference crosses an argument evaluation or a nested call.
+Return values own their data and remain valid after the callee frame ends.
+
+The call-depth guard compares the number of active frames with its positive limit before allocating another frame.
+The entry counts as depth one, and returning frees capacity for later calls.
+The shared step counter continues across calls and returns, so nested calls cannot reset the execution budget.
+Limit failures identify the called function or the next statement or expression as specified in the language rules.
 
 The final increment will add factorial and Fibonacci examples and complete command regression coverage.
 Bytecode and VM work remain in their later roadmap phases.

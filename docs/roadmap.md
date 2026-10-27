@@ -261,15 +261,20 @@ Delivery uses three local increments:
 Increment 1 is complete: conditions and loops execute with return propagation and a shared step budget.
 Five new API test groups cover branch selection, loops, iteration environments, nested returns, and limit behavior.
 The existing command cases for conditions and loops now expect execution results instead of unsupported-node errors.
-Calls and final validation remain pending. Phase 7 is not complete.
+
+Increment 2 is complete: stable, exclusively owned frames isolate parameter and local values for each activation.
+Calls reuse static bindings and support copied arguments, direct recursion, mutual recursion, and returns through control flow.
+Eight new API groups cover parameters, argument order, recursive locals, mutual recursion, call returns and errors, depth, and shared budgets.
+The existing call group and command case now expect successful execution.
+Examples and final validation remain pending. Phase 7 is not complete.
 
 Lookup terms: `activation record`, `stack frame`, `calling convention`, `parameter passing`, `call stack`, `control flow`, `recursion`
 
 - [x] `if` / `while` working in the interpreter
 - [x] Execution step limits
-- [ ] Function frames, parameters, calls, and call-depth limits
+- [x] Function frames, parameters, calls, and call-depth limits
 - [ ] Examples: factorial, fibonacci
-- [ ] Regression tests for call/return and recursion
+- [x] Regression tests for call/return and recursion
 - [ ] Final normal and sanitizer validation
 
 ## Phase 8: Bytecode compiler
