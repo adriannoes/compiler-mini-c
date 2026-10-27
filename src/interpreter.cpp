@@ -11,7 +11,7 @@
 namespace minic {
 namespace {
 
-using Environment = std::unordered_map<std::size_t, std::optional<Value>>;
+using Environment = std::unordered_map<std::size_t, detail::StorageSlot>;
 
 struct CallFrame {
   std::vector<Environment> environments;
@@ -78,7 +78,7 @@ class Interpreter {
     const EnvironmentScope environment(frames_.back()->environments);
     for (std::size_t i = 0; i < function.parameters.size(); ++i) {
       const auto id = parameters_.at(&function.parameters[i]);
-      frames_.back()->environments.back().emplace(id, arguments.at(i));
+      frames_.back()->environments.back().emplace(id, detail::StorageSlot{arguments.at(i), {}});
     }
     step(function.body.location);
     const auto returned = block_contents(function.body);
@@ -106,7 +106,7 @@ class Interpreter {
     return *found;
   }
 
-  std::optional<Value>& slot(const Expr& expression) {
+  detail::StorageSlot& slot(const Expr& expression) {
     const auto id = binding(expression).symbol.index;
     auto& environments = frames_.back()->environments;
     for (auto environment = environments.rbegin(); environment != environments.rend(); ++environment) {
@@ -129,12 +129,13 @@ class Interpreter {
 
   Value evaluate(const BooleanExpr& node, const Expr&) { return node.value; }
 
-  Value evaluate(const IndexExpr&, const Expr& source) {
-    throw RuntimeError(source.location, "Array execution is not available in this interpreter increment.");
+  Value evaluate(const IndexExpr& node, const Expr& source) {
+    const auto index = expression(*node.index);
+    return slot(source).load_element(index, node.name, source.location);
   }
 
   Value evaluate(const NameExpr& node, const Expr& source) {
-    const auto& value = slot(source);
+    const auto& value = slot(source).scalar;
     if (!value) {
       throw RuntimeError(source.location, "The variable \"" + node.name + "\" has no value.");
     }
@@ -165,8 +166,16 @@ class Interpreter {
   }
 
   Value evaluate(const AssignmentExpr& node, const Expr&) {
+    if (const auto* target = std::get_if<IndexExpr>(&node.target->node)) {
+      step(node.target->location);
+      const auto index = expression(*target->index);
+      const auto offset = slot(*node.target).check_index(index, target->name, node.target->location);
+      const auto value = expression(*node.value);
+      slot(*node.target).elements.at(offset) = value;
+      return value;
+    }
     const auto value = expression(*node.value);
-    slot(*node.target) = value;
+    slot(*node.target).scalar = value;
     return value;
   }
 
@@ -206,14 +215,12 @@ class Interpreter {
   std::optional<Value> execute(const BlockStmt& node) { return block(node); }
 
   std::optional<Value> execute(const VarDecl& node) {
-    if (node.array_extent) {
-      throw RuntimeError(node.location, "Array execution is not available in this interpreter increment.");
-    }
     const auto id = declarations_.at(&node);
-    frames_.back()->environments.back().emplace(id, std::nullopt);
+    frames_.back()->environments.back().emplace(id, detail::StorageSlot{});
+    frames_.back()->environments.back().at(id).reset(analysis_.array_length(node).value_or(0));
     if (node.initializer) {
       auto value = expression(*node.initializer);
-      frames_.back()->environments.back().at(id) = std::move(value);
+      frames_.back()->environments.back().at(id).scalar = std::move(value);
     }
     return std::nullopt;
   }

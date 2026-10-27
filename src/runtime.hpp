@@ -4,10 +4,12 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 namespace minic {
 
@@ -27,6 +29,15 @@ struct RuntimeError : std::runtime_error {
 std::string format_value(const Value& value);
 
 namespace detail {
+
+struct StorageSlot {
+  std::optional<Value> scalar;
+  std::vector<std::optional<Value>> elements;
+
+  void reset(std::size_t length = 0);
+  std::size_t check_index(const Value& index, const std::string& name, SourceLocation location) const;
+  Value load_element(const Value& index, const std::string& name, SourceLocation location) const;
+};
 
 std::int64_t parse_integer(std::string_view digits, bool negative, SourceLocation location);
 Value runtime_unary(TokenKind op, const Value& operand, SourceLocation location);

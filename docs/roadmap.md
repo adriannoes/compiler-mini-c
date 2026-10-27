@@ -401,7 +401,10 @@ Delivery uses three local increments:
 Increment 1 provides local `int` and `bool` array declarations with lengths from 1 through 1024.
 Nine front-end test groups and one compiler group cover syntax, bindings, types, sizes, and ordered index validation.
 Whole arrays remain outside value expressions, function signatures, copies, and initializers.
-Storage and final execution validation remain pending.
+Increment 2 adds owned storage per activation and executes indexed operations in the interpreter and both VM modes.
+Fourteen execution groups cover values, error priority, initialization, recursion, and instruction guards.
+They include 1920 differential combinations of program and limits across all three engines.
+Examples, command fixtures, and final sanitizer validation remain pending.
 
 Lookup terms (by choice): `array`, `struct`, `record`, `garbage collection`, `mark and sweep`, `reference counting`
 

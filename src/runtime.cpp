@@ -1,4 +1,5 @@
 #include "runtime.hpp"
+#include "type_rules.hpp"
 
 #include <limits>
 
@@ -18,6 +19,36 @@ std::string format_value(const Value& value) {
 }
 
 namespace detail {
+
+void StorageSlot::reset(std::size_t length) {
+  if (length > max_array_length) {
+    throw std::invalid_argument("The array length is outside the supported range.");
+  }
+  scalar.reset();
+  elements.assign(length, std::nullopt);
+}
+
+std::size_t StorageSlot::check_index(const Value& index, const std::string& name, SourceLocation location) const {
+  const auto* integer = std::get_if<std::int64_t>(&index);
+  if (!integer) {
+    throw std::invalid_argument("The array index must have type int.");
+  }
+  if (*integer < 0 || static_cast<std::uint64_t>(*integer) >= elements.size()) {
+    throw RuntimeError(location, "The array index " + std::to_string(*integer) + " is outside \"" + name +
+                                    "\" with length " + std::to_string(elements.size()) + '.');
+  }
+  return static_cast<std::size_t>(*integer);
+}
+
+Value StorageSlot::load_element(const Value& index, const std::string& name, SourceLocation location) const {
+  const auto offset = check_index(index, name, location);
+  const auto& value = elements[offset];
+  if (!value) {
+    throw RuntimeError(location, "The array element \"" + name + '[' + std::to_string(offset) + "]\" has no value.");
+  }
+  return *value;
+}
+
 namespace {
 
 constexpr auto minimum = std::numeric_limits<std::int64_t>::min();

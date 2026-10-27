@@ -90,7 +90,7 @@ The `--bytecode-opt` command prints optimized instructions, and `--run-vm-opt` e
 Phase 11 adds syntax, bindings, type analysis, and bytecode for fixed local `int` and `bool` arrays.
 Lengths range from 1 through 1024, and brackets add two token types for a total of 35.
 The [array rules](docs/language.md#phase-11-local-arrays) define bounds, initialization, and indexed assignment order.
-Array execution remains in progress.
+The interpreter, VM, and optimized VM execute indexed reads and writes with bounds and missing-value diagnostics.
 
 ## Build and use
 
@@ -258,7 +258,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 360 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, arrays, and commands.
+The 374 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, arrays, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 The 350 tests from phase 10 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.

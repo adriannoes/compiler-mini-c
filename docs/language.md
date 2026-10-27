@@ -764,7 +764,7 @@ An array length is declaration metadata, so clearing storage adds no length-expr
 The interpreter, original VM, and optimized VM must agree on values, error positions, and execution limits.
 The optimizer treats element checks, reads, and writes as barriers and retains their effects and possible errors.
 
-The first increment provides syntax, bindings, types, and bytecode. Array execution follows in the next increment.
+Syntax, bindings, types, bytecode, and execution support these rules in all three engines.
 The existing commands and public scalar `Value` contract remain unchanged for programs without arrays.
 
 ## Planned language scope

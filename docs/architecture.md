@@ -613,7 +613,7 @@ Its declaration map retains the same AST lifetime requirement as the other analy
 
 `BytecodeLocal::array_length` is zero for a scalar and positive for a fixed array.
 The disassembler prints an array slot as `int[4]` or `bool[2]`, while scalar slot output stays unchanged.
-`RESET_LOCAL` will clear scalar or array storage according to that metadata.
+`RESET_LOCAL` clears scalar or array storage according to that metadata.
 Three indexed instructions use a local slot operand:
 
 | Instruction | Stack effect | Behavior |
@@ -629,7 +629,21 @@ The type checker and compiler retain the same scalar `int`, `bool`, and `void` A
 
 Nine front-end groups cover bracket positions, AST ownership, grammar limits, bindings, element types, lengths, errors, and lowering order.
 The compiler stack-analysis tests also cover indexed operations inside calls, conditions, and loops.
-The first increment leaves array execution behind explicit runtime diagnostics until the storage implementation arrives.
+Both execution engines use `detail::StorageSlot`, which owns an optional scalar and a vector of optional elements.
+Each function activation owns its slots. An executed declaration resets its slot and gives every array element no value.
+The interpreter stores slots in block environments, and the VM stores slots in its explicit call frames.
+The VM retains an array allocation until the frame ends or the declaration resets that slot.
+Static bindings prevent access after the block scope ends.
+
+The shared slot helpers check signed indices before conversion and report bounds or missing-value errors at the indexed name.
+The interpreter saves an integer offset before the assignment value and finds the slot again after that value returns.
+It retains no slot reference across recursive calls.
+The VM keeps the evaluated index below the right operand on its value stack.
+Element storage stays outside the scalar `Value` API and ordinary argument and return values.
+
+Fourteen execution groups cover both element types, evaluation order, initialization, loop resets, scopes, calls, recursion, limits, and malformed instructions.
+The differential group compares all three engines across 1920 combinations of program, step budget, and call-depth limit.
+The optimizer retains indexed checks, reads, and stores as barriers, including unused reads that can fail.
 
 ## Planned pipeline
 

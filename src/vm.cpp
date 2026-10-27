@@ -47,7 +47,7 @@ struct Frame {
   std::size_t function;
   std::size_t pc = 0;
   std::size_t base = 0;
-  std::vector<std::optional<Value>> locals;
+  std::vector<detail::StorageSlot> locals;
 };
 
 class VirtualMachine {
@@ -89,16 +89,33 @@ class VirtualMachine {
           require_type(top(), local(instruction.operand).type);
           slot(instruction.operand) = top();
           break;
-        case OpCode::ResetLocal:
-          if (local(instruction.operand).array_length != 0) {
-            throw RuntimeError(instruction.location, "Array execution is not available in this VM increment.");
-          }
-          slot(instruction.operand).reset();
+        case OpCode::ResetLocal: {
+          const auto length = local(instruction.operand).array_length;
+          frames_.back().locals[instruction.operand].reset(length);
           break;
-        case OpCode::CheckIndex:
-        case OpCode::LoadElement:
-        case OpCode::StoreElement:
-          throw RuntimeError(instruction.location, "Array execution is not available in this VM increment.");
+        }
+        case OpCode::CheckIndex: {
+          const auto& metadata = local(instruction.operand);
+          array_slot(instruction.operand).check_index(top(), metadata.name, instruction.location);
+          break;
+        }
+        case OpCode::LoadElement: {
+          const auto index = pop();
+          const auto& metadata = local(instruction.operand);
+          values_.push_back(array_slot(instruction.operand).load_element(index, metadata.name, instruction.location));
+          break;
+        }
+        case OpCode::StoreElement: {
+          const auto value = pop();
+          const auto index = pop();
+          const auto& metadata = local(instruction.operand);
+          require_type(value, metadata.type);
+          auto& storage = array_slot(instruction.operand);
+          const auto offset = storage.check_index(index, metadata.name, instruction.location);
+          storage.elements[offset] = value;
+          values_.push_back(value);
+          break;
+        }
         case OpCode::Pop: pop(); break;
         case OpCode::Negate:
         case OpCode::Not: {
@@ -162,10 +179,13 @@ class VirtualMachine {
       invalid("The call has insufficient argument values.");
     }
     const auto base = values_.size() - callee.parameter_count;
-    Frame frame{index, 0, base, std::vector<std::optional<Value>>(callee.locals.size())};
+    Frame frame{index, 0, base, std::vector<detail::StorageSlot>(callee.locals.size())};
     for (std::size_t parameter = 0; parameter < callee.parameter_count; ++parameter) {
+      if (callee.locals[parameter].array_length != 0) {
+        invalid("Array parameters are not supported.");
+      }
       require_type(values_[base + parameter], callee.locals[parameter].type);
-      frame.locals[parameter] = values_[base + parameter];
+      frame.locals[parameter].scalar = values_[base + parameter];
     }
     frames_.push_back(std::move(frame));
     values_.resize(base);
@@ -190,7 +210,17 @@ class VirtualMachine {
   }
 
   std::optional<Value>& slot(std::size_t index) {
-    local(index);
+    if (local(index).array_length != 0) {
+      invalid("A scalar instruction selected an array slot.");
+    }
+    return frames_.back().locals[index].scalar;
+  }
+
+  detail::StorageSlot& array_slot(std::size_t index) {
+    const auto& metadata = local(index);
+    if (metadata.array_length == 0 || frames_.back().locals[index].elements.size() != metadata.array_length) {
+      invalid("The array slot has no active storage.");
+    }
     return frames_.back().locals[index];
   }
 

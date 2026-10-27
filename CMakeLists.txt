@@ -41,6 +41,15 @@ target_link_libraries(minic PRIVATE minic_vm minic_optimizer)
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_arrays_runtime_tests tests/arrays_runtime_test.cpp)
+  target_link_libraries(minic_arrays_runtime_tests PRIVATE minic_vm minic_optimizer)
+  foreach(case IN ITEMS integers booleans index_order assignment_values bounds missing_values
+                        reset_and_scope calls recursion skipped_access step_limits optimizer_barriers
+                        differential_limits invalid_bytecode)
+    add_test(NAME array_runtime.${case} COMMAND minic_arrays_runtime_tests ${case})
+  endforeach()
+  set_tests_properties(array_runtime.differential_limits PROPERTIES TIMEOUT 30)
+
   add_executable(minic_arrays_frontend_tests tests/arrays_frontend_test.cpp)
   target_link_libraries(minic_arrays_frontend_tests PRIVATE minic_bytecode)
   foreach(case IN ITEMS tokens syntax syntax_errors bindings types lengths type_errors lowering stage_priority)
