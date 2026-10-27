@@ -60,6 +60,10 @@ The approved [name rules](docs/language.md#phase-4-name-rules) record visibility
 The analysis returns separate declaration bindings without modifying the AST.
 The `--resolve` command prints scopes, symbols, and the declaration selected for each name use.
 
+Phase 5 starts with explicit rules for `int`, `bool`, and `void` in the front-end library.
+The approved [type rules](docs/language.md#phase-5-type-rules) define operators, declarations, calls, conditions, and returns.
+AST type analysis and the `--check` command remain pending.
+
 ## Build and use
 
 From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
@@ -119,10 +123,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 80 tests cover tokens, positions, lexical errors, AST structure, syntax errors, name resolution, and command behavior.
+The 85 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, type rules, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-All 80 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+The original 80 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -150,7 +154,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 2 | Recursive-descent parser | done |
 | 3 | Parsing theory (First/Follow, bottom-up) | done |
 | 4 | Symbol table / scopes | done |
-| 5 | Type checking | pending |
+| 5 | Type checking | in progress |
 | 6 | Tree-walk interpreter (stage A) | pending |
 | 7 | Functions and control flow | pending |
 | 8 | Bytecode compiler | pending |

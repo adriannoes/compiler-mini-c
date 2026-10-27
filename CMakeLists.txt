@@ -18,6 +18,7 @@ add_library(minic_frontend
   src/resolution_printer.cpp
   src/symbol_table.cpp
   src/token.cpp
+  src/type_rules.cpp
 )
 target_include_directories(minic_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
@@ -27,6 +28,12 @@ target_link_libraries(minic PRIVATE minic_frontend)
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_type_rules_tests tests/type_rules_test.cpp)
+  target_link_libraries(minic_type_rules_tests PRIVATE minic_frontend)
+  foreach(case IN ITEMS syntax arithmetic comparisons logic equality)
+    add_test(NAME type_rules.${case} COMMAND minic_type_rules_tests ${case})
+  endforeach()
+
   add_executable(minic_resolution_tests tests/name_resolution_test.cpp)
   target_link_libraries(minic_resolution_tests PRIVATE minic_frontend)
   foreach(case IN ITEMS empty bindings undeclared redeclarations shadowing isolation

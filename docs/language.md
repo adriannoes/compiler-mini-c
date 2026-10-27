@@ -331,6 +331,74 @@ A symbol line shows its identifier, category, quoted name, declaring scope, and 
 A binding line shows the use category, quoted name, use scope, use position, selected symbol, and declaration position.
 The complete examples live in [scopes.resolution](../tests/scopes.resolution) and [recursion.resolution](../tests/recursion.resolution).
 
+## Phase 5 type rules
+
+Type checking determines whether expressions and declarations use compatible Mini-C types.
+These rules define the approved phase 5 scope without changing the grammar or name rules.
+The front-end library provides the basic type rules.
+AST type analysis and the `--check` command remain pending.
+
+### Types and expressions
+
+Mini-C types are `int`, `bool`, and `void`.
+Variables and parameters must use `int` or `bool`. Function return types can also use `void`.
+Mini-C does not convert `int` to `bool` or `bool` to `int`.
+Integer literals have type `int` without numeric conversion or a limit on their text length.
+Boolean literals have type `bool`.
+
+| Expression | Required operand types | Result type |
+|------------|------------------------|-------------|
+| Unary `-` | `int` | `int` |
+| `+`, `-`, `*`, `/`, `%` | Both `int` | `int` |
+| `<`, `<=`, `>`, `>=` | Both `int` | `bool` |
+| Unary `!` | `bool` | `bool` |
+| `&&`, `\|\|` | Both `bool` | `bool` |
+| `==`, `!=` | Matching `int` or matching `bool` | `bool` |
+| Assignment | Value type matches the target type | Target type |
+| Named call | Arguments match the function parameters | Function return type |
+
+A name expression has the type written in its resolved variable or parameter declaration.
+An initializer must have the same type as its variable.
+Assignment does not convert the value, and an assignment expression retains the target type.
+A standalone expression statement can discard an `int`, `bool`, or `void` result.
+A `void` call cannot supply an operand, argument, initializer, condition, or returned value.
+
+### Functions and conditions
+
+A call must supply exactly one argument for each parameter, in parameter order.
+Each argument type must match the corresponding parameter type.
+The checker examines all function signatures before it visits bodies.
+Forward calls, recursion, and mutual recursion retain the existing name-resolution behavior.
+
+An `if` or `while` condition must have type `bool`.
+A `void` function accepts `return;` and can end without an explicit return.
+A `void` function cannot use `return expression;`, including an expression with type `void`.
+An `int` or `bool` function must return a value with its declared return type.
+Such a function must also guarantee a return value on every path under the rules that follow.
+
+A return statement guarantees return.
+A block guarantees return when a statement in its sequence guarantees return.
+An `if` guarantees return only when it has an `else` and both branches guarantee return.
+A `while` never establishes a return guarantee, even with a literal `true` condition.
+The checker examines every statement, including statements after a guaranteed return.
+
+These rules are conservative because the checker does not evaluate conditions.
+They reject some non-void functions whose loops never end.
+This limit keeps return analysis separate from constant evaluation and program execution.
+
+### Errors and limits
+
+The checker stops at the first error and returns no partial analysis.
+Name resolution completes before type analysis, so name errors take priority throughout the program.
+Function signature errors precede body type errors.
+Other type errors follow source traversal order.
+Diagnostics identify invalid type syntax, an incompatible expression, an invalid call or return, or a missing return guarantee.
+
+The token, AST, and resolution commands do not perform type checking.
+The checker does not enforce numeric limits, analyze definite initialization, require `main`, or execute code.
+For example, `int x = x;` passes type analysis without establishing that `x` holds an initialized value.
+Division by zero and integer overflow remain outside this analysis because the checker does not evaluate expressions.
+
 ## Planned language scope
 
 The following language scope grows phase by phase (see [roadmap.md](roadmap.md)):

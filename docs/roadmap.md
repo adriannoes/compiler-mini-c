@@ -180,6 +180,20 @@ Lookup terms: `symbol table`, `environment`, `lexical scope`, `static scope`, `n
 
 ## Phase 5: Semantic analysis / types
 
+Status: in progress.
+
+The approved rules live in [language.md](language.md#phase-5-type-rules).
+The analysis design lives in [architecture.md](architecture.md#type-rules-and-analysis-design).
+Delivery uses three local increments:
+
+1. Type representation, expression and declaration rules, focused tests, and the approved design record.
+2. AST type analysis, call signatures, conditions, returns, return guarantees, and API tests.
+3. Command integration, examples, diagnostics, documentation, and normal and sanitizer validation.
+
+Increment 1 is complete: `Type` and the internal rules distinguish `int`, `bool`, and `void` without conversions.
+Five new test groups cover type syntax, arithmetic, comparisons, logic, and equality, including invalid operand types.
+The AST analysis and command remain pending. Phase 5 is not complete.
+
 Lookup terms: `semantic analysis`, `type checking`, `type system`, `type environment`, `syntax-directed definition`, `attribute grammar`, `annotated AST`, `arity`, `return path`
 
 - [ ] Check `int` / `bool` / `void` programs

@@ -226,6 +226,28 @@ The resolver tests inspect actual declarations and use bindings for shadowing, v
 They preserve syntax-only parsing and permit type-invalid programs when their names resolve.
 Phase 4 does not establish that a program can execute safely or pass later type analysis.
 
+## Type rules and analysis design
+
+`src/type_rules.hpp` defines `Type`, which represents `int`, `bool`, or `void` independently of `TypeSyntax`.
+`TypeSyntax` continues to record source syntax without validating it.
+The internal rule functions map type keywords and determine operator results without evaluating expressions.
+They reject incompatible types with `TypeError`, which carries a source position and an English diagnostic.
+
+The approved [type rules](language.md#phase-5-type-rules) define declarations, operators, calls, conditions, and returns.
+Explicit operator rules prevent accidental C++ conversions between Mini-C integers and booleans.
+Variables and parameters reject `void` at the written type keyword position.
+Operator errors identify the operator position.
+
+The planned `check_types(const Program&)` API will return `TypeAnalysis` without changing the AST.
+The result will own its `NameResolution` and expression-type map.
+Internal name resolution will prevent callers from pairing the type analysis with bindings from a different program.
+The result will borrow AST nodes, so the caller must keep the tree alive, unchanged, and unmoved.
+This adds auxiliary storage but leaves all earlier analysis modes independent.
+
+The final increment will add `--check <file>` with empty standard output and return code `0` on success.
+Errors will use the existing positioned diagnostic format and return code `1`.
+The command will not execute the program or require a `main` function.
+
 ## Planned pipeline
 
 ```text
