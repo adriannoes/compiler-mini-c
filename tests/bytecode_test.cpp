@@ -49,6 +49,8 @@ void instructions() {
       {minic::OpCode::Step, "STEP"}, {minic::OpCode::LoadConstant, "LOAD_CONSTANT 7"},
       {minic::OpCode::LoadLocal, "LOAD_LOCAL 7"}, {minic::OpCode::StoreLocal, "STORE_LOCAL 7"},
       {minic::OpCode::ResetLocal, "RESET_LOCAL 7"}, {minic::OpCode::Pop, "POP"},
+      {minic::OpCode::CheckIndex, "CHECK_INDEX 7"}, {minic::OpCode::LoadElement, "LOAD_ELEMENT 7"},
+      {minic::OpCode::StoreElement, "STORE_ELEMENT 7"},
       {minic::OpCode::Negate, "NEGATE"}, {minic::OpCode::Not, "NOT"},
       {minic::OpCode::Add, "ADD"}, {minic::OpCode::Subtract, "SUBTRACT"},
       {minic::OpCode::Multiply, "MULTIPLY"}, {minic::OpCode::Divide, "DIVIDE"},

@@ -87,6 +87,11 @@ Phase 10 provides `minic::optimize_bytecode`, local constant folding, unreachabl
 The [optimization rules](docs/language.md#phase-10-optimization-rules) preserve source steps, numeric failures, effects, and the original input.
 The `--bytecode-opt` command prints optimized instructions, and `--run-vm-opt` executes them on the VM.
 
+Phase 11 adds syntax, bindings, type analysis, and bytecode for fixed local `int` and `bool` arrays.
+Lengths range from 1 through 1024, and brackets add two token types for a total of 35.
+The [array rules](docs/language.md#phase-11-local-arrays) define bounds, initialization, and indexed assignment order.
+Array execution remains in progress.
+
 ## Build and use
 
 From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
@@ -253,10 +258,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 350 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, and commands.
+The 360 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, arrays, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-All 350 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+The 350 tests from phase 10 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -290,7 +295,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 8 | Bytecode compiler | done |
 | 9 | VM (stage B, primary target) | done |
 | 10 | Local optimizations | done |
-| 11 | Optional language features | pending |
+| 11 | Optional language features | in progress |
 | 12 | LLVM literacy | pending |
 | 13 | Wrap-up / portfolio polish | pending |
 

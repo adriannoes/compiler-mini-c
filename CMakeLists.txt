@@ -41,6 +41,12 @@ target_link_libraries(minic PRIVATE minic_vm minic_optimizer)
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_arrays_frontend_tests tests/arrays_frontend_test.cpp)
+  target_link_libraries(minic_arrays_frontend_tests PRIVATE minic_bytecode)
+  foreach(case IN ITEMS tokens syntax syntax_errors bindings types lengths type_errors lowering stage_priority)
+    add_test(NAME arrays.${case} COMMAND minic_arrays_frontend_tests ${case})
+  endforeach()
+
   add_executable(minic_optimizer_tests tests/optimizer_test.cpp)
   target_link_libraries(minic_optimizer_tests PRIVATE minic_optimizer minic_vm)
   foreach(case IN ITEMS empty integer_folding boolean_folding numeric_guards step_markers
@@ -70,7 +76,7 @@ if(BUILD_TESTING)
   target_link_libraries(minic_bytecode_compiler_tests PRIVATE minic_bytecode)
   foreach(case IN ITEMS empty entry_independent expressions assignments scopes loop_slots
                         conditionals loops short_circuit calls evaluation_order recursion returns
-                        numeric_text step_markers static_errors ownership)
+                        numeric_text step_markers static_errors ownership arrays)
     add_test(NAME compilation.${case} COMMAND minic_bytecode_compiler_tests ${case})
   endforeach()
   add_test(NAME compilation.fixtures

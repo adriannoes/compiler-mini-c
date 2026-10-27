@@ -49,12 +49,26 @@ class TypeChecker {
   Type visit(const IntegerExpr&, const Expr&) { return Type::Int; }
   Type visit(const BooleanExpr&, const Expr&) { return Type::Bool; }
 
-  Type visit(const NameExpr&, const Expr& source) {
+  Type visit(const NameExpr& node, const Expr& source) {
     const auto& declaration = symbol(source).declaration;
     if (const auto* parameter = std::get_if<const Parameter*>(&declaration)) {
       return detail::syntax_type((*parameter)->type);
     }
-    return detail::syntax_type(std::get<const VarDecl*>(declaration)->type);
+    const auto* variable = std::get<const VarDecl*>(declaration);
+    if (variable->array_extent) {
+      throw TypeError(source.location, "Array \"" + node.name + "\" requires an index.");
+    }
+    return detail::syntax_type(variable->type);
+  }
+
+  Type visit(const IndexExpr& node, const Expr& source) {
+    const auto* variable = std::get_if<const VarDecl*>(&symbol(source).declaration);
+    if (!variable || !(*variable)->array_extent) {
+      throw TypeError(source.location, "Name \"" + node.name + "\" does not refer to an array.");
+    }
+    const auto index = expression(*node.index);
+    detail::require_type(index, Type::Int, node.index->location);
+    return detail::syntax_type((*variable)->type);
   }
 
   Type visit(const UnaryExpr& node, const Expr& source) {
@@ -108,6 +122,23 @@ class TypeChecker {
 
   bool visit(const VarDecl& node, Type) {
     const auto declared = detail::value_type(node.type);
+    if (node.array_extent) {
+      std::size_t length = 0;
+      for (const char digit : node.array_extent->text) {
+        if (digit < '0' || digit > '9' || length > max_array_length / 10 ||
+            length * 10 + static_cast<std::size_t>(digit - '0') > max_array_length) {
+          throw TypeError(node.array_extent->location, "Array length must be from 1 through 1024.");
+        }
+        length = length * 10 + static_cast<std::size_t>(digit - '0');
+      }
+      if (length == 0) {
+        throw TypeError(node.array_extent->location, "Array length must be from 1 through 1024.");
+      }
+      if (node.initializer) {
+        throw TypeError(node.initializer->location, "Array initializers are not supported.");
+      }
+      result_.array_lengths_.emplace(&node, length);
+    }
     if (node.initializer) {
       const auto initializer = expression(*node.initializer);
       detail::require_type(initializer, declared, node.initializer->location);
@@ -159,6 +190,11 @@ class TypeChecker {
 std::optional<Type> TypeAnalysis::type_of(const Expr& expression) const {
   const auto found = types_.find(&expression);
   return found == types_.end() ? std::nullopt : std::optional<Type>{found->second};
+}
+
+std::optional<std::size_t> TypeAnalysis::array_length(const VarDecl& declaration) const {
+  const auto found = array_lengths_.find(&declaration);
+  return found == array_lengths_.end() ? std::nullopt : std::optional<std::size_t>{found->second};
 }
 
 TypeAnalysis check_types(const Program& program) { return TypeChecker().check(program); }

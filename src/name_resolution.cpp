@@ -49,6 +49,11 @@ class NameResolver {
     bind(source, node.name, scope, UseKind::Read);
   }
 
+  void visit(const IndexExpr& node, const Expr& source, ScopeId scope) {
+    bind(source, node.name, scope, UseKind::Read);
+    expression(*node.index, scope);
+  }
+
   void visit(const UnaryExpr& node, const Expr&, ScopeId scope) {
     expression(*node.operand, scope);
   }
@@ -59,7 +64,12 @@ class NameResolver {
   }
 
   void visit(const AssignmentExpr& node, const Expr&, ScopeId scope) {
-    bind(*node.target, std::get<NameExpr>(node.target->node).name, scope, UseKind::Write);
+    if (const auto* index = std::get_if<IndexExpr>(&node.target->node)) {
+      bind(*node.target, index->name, scope, UseKind::Write);
+      expression(*index->index, scope);
+    } else {
+      bind(*node.target, std::get<NameExpr>(node.target->node).name, scope, UseKind::Write);
+    }
     expression(*node.value, scope);
   }
 

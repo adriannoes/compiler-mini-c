@@ -129,6 +129,10 @@ class Interpreter {
 
   Value evaluate(const BooleanExpr& node, const Expr&) { return node.value; }
 
+  Value evaluate(const IndexExpr&, const Expr& source) {
+    throw RuntimeError(source.location, "Array execution is not available in this interpreter increment.");
+  }
+
   Value evaluate(const NameExpr& node, const Expr& source) {
     const auto& value = slot(source);
     if (!value) {
@@ -202,6 +206,9 @@ class Interpreter {
   std::optional<Value> execute(const BlockStmt& node) { return block(node); }
 
   std::optional<Value> execute(const VarDecl& node) {
+    if (node.array_extent) {
+      throw RuntimeError(node.location, "Array execution is not available in this interpreter increment.");
+    }
     const auto id = declarations_.at(&node);
     frames_.back()->environments.back().emplace(id, std::nullopt);
     if (node.initializer) {

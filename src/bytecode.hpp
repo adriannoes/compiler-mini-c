@@ -15,6 +15,9 @@ enum class OpCode {
   LoadLocal,
   StoreLocal,
   ResetLocal,
+  CheckIndex,
+  LoadElement,
+  StoreElement,
   Pop,
   Negate,
   Not,
@@ -55,6 +58,7 @@ struct BytecodeLocal {
   std::string name;
   Type type;
   SourceLocation location;
+  std::size_t array_length = 0;
 };
 
 struct BytecodeFunction {

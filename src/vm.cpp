@@ -89,7 +89,16 @@ class VirtualMachine {
           require_type(top(), local(instruction.operand).type);
           slot(instruction.operand) = top();
           break;
-        case OpCode::ResetLocal: slot(instruction.operand).reset(); break;
+        case OpCode::ResetLocal:
+          if (local(instruction.operand).array_length != 0) {
+            throw RuntimeError(instruction.location, "Array execution is not available in this VM increment.");
+          }
+          slot(instruction.operand).reset();
+          break;
+        case OpCode::CheckIndex:
+        case OpCode::LoadElement:
+        case OpCode::StoreElement:
+          throw RuntimeError(instruction.location, "Array execution is not available in this VM increment.");
         case OpCode::Pop: pop(); break;
         case OpCode::Negate:
         case OpCode::Not: {

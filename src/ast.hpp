@@ -3,6 +3,7 @@
 #include "token.hpp"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -29,6 +30,11 @@ struct NameExpr {
   std::string name;
 };
 
+struct IndexExpr {
+  std::string name;
+  ExprPtr index;
+};
+
 struct UnaryExpr {
   TokenKind op;
   ExprPtr operand;
@@ -53,7 +59,7 @@ struct CallExpr {
 struct Expr {
   SourceLocation location;
   std::variant<IntegerExpr, BooleanExpr, NameExpr, UnaryExpr, BinaryExpr,
-               AssignmentExpr, CallExpr> node;
+               AssignmentExpr, CallExpr, IndexExpr> node;
 };
 
 struct Stmt;
@@ -69,11 +75,17 @@ struct ReturnStmt {
   ExprPtr value;
 };
 
+struct ArrayExtent {
+  std::string text;
+  SourceLocation location;
+};
+
 struct VarDecl {
   SourceLocation location;
   TypeSyntax type;
   std::string name;
   ExprPtr initializer;
+  std::optional<ArrayExtent> array_extent = std::nullopt;
 };
 
 struct ExprStmt {

@@ -150,6 +150,8 @@ class Scanner {
         case ')': kind = TokenKind::RightParen; break;
         case '{': kind = TokenKind::LeftBrace; break;
         case '}': kind = TokenKind::RightBrace; break;
+        case '[': kind = TokenKind::LeftBracket; break;
+        case ']': kind = TokenKind::RightBracket; break;
         case ';': kind = TokenKind::Semicolon; break;
         case ',': kind = TokenKind::Comma; break;
         case '+': kind = TokenKind::Plus; break;

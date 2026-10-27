@@ -13,6 +13,9 @@ const char* opcode_name(OpCode opcode) {
     case OpCode::LoadLocal: return "LOAD_LOCAL";
     case OpCode::StoreLocal: return "STORE_LOCAL";
     case OpCode::ResetLocal: return "RESET_LOCAL";
+    case OpCode::CheckIndex: return "CHECK_INDEX";
+    case OpCode::LoadElement: return "LOAD_ELEMENT";
+    case OpCode::StoreElement: return "STORE_ELEMENT";
     case OpCode::Pop: return "POP";
     case OpCode::Negate: return "NEGATE";
     case OpCode::Not: return "NOT";
@@ -46,6 +49,9 @@ bool has_operand(OpCode opcode) {
     case OpCode::LoadLocal:
     case OpCode::StoreLocal:
     case OpCode::ResetLocal:
+    case OpCode::CheckIndex:
+    case OpCode::LoadElement:
+    case OpCode::StoreElement:
     case OpCode::Jump:
     case OpCode::JumpIfFalse:
     case OpCode::JumpIfTrue:
@@ -66,8 +72,11 @@ std::string print_bytecode(const BytecodeProgram& program) {
            << function.location.column << '\n';
     for (std::size_t local = 0; local < function.locals.size(); ++local) {
       const auto& slot = function.locals[local];
-      output << "  local " << local << ' ' << std::quoted(slot.name) << ' ' << type_name(slot.type)
-             << " @" << slot.location.line << ':' << slot.location.column << '\n';
+      output << "  local " << local << ' ' << std::quoted(slot.name) << ' ' << type_name(slot.type);
+      if (slot.array_length != 0) {
+        output << '[' << slot.array_length << ']';
+      }
+      output << " @" << slot.location.line << ':' << slot.location.column << '\n';
     }
     for (std::size_t constant = 0; constant < function.constants.size(); ++constant) {
       output << "  constant " << constant;

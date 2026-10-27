@@ -35,6 +35,9 @@ void validate(const minic::BytecodeProgram& program) {
         case OpCode::LoadLocal:
         case OpCode::StoreLocal:
         case OpCode::ResetLocal:
+        case OpCode::CheckIndex:
+        case OpCode::LoadElement:
+        case OpCode::StoreElement:
           require(instruction.operand < function.locals.size(), "Invalid local index.");
           break;
         case OpCode::Jump:
@@ -82,6 +85,19 @@ void validate(const minic::BytecodeProgram& program) {
           break;
         case OpCode::StoreLocal:
           take(function.locals[instruction.operand].type);
+          stack.push_back(function.locals[instruction.operand].type);
+          break;
+        case OpCode::CheckIndex:
+          take(Type::Int);
+          stack.push_back(Type::Int);
+          break;
+        case OpCode::LoadElement:
+          take(Type::Int);
+          stack.push_back(function.locals[instruction.operand].type);
+          break;
+        case OpCode::StoreElement:
+          take(function.locals[instruction.operand].type);
+          take(Type::Int);
           stack.push_back(function.locals[instruction.operand].type);
           break;
         case OpCode::Pop: pop(); break;
@@ -346,6 +362,12 @@ void ownership() {
           "Expected bytecode to outlive a temporary AST.");
 }
 
+void arrays() {
+  compile("int f(int n) { return n; } int main() { int a[3]; bool b[2]; int i = 0; "
+          "while (i < 3) { a[i] = f(i + 1); i = i + 1; } b[0] = a[0] < a[1]; "
+          "if (b[0]) return a[2]; return 0; }");
+}
+
 void fixtures(const std::string& directory) {
   for (const std::string name : {"hello", "lexer", "calls", "control_flow", "scopes", "recursion", "types",
                                  "interpreter", "short_circuit", "runtime_error", "factorial", "fibonacci"}) {
@@ -377,6 +399,7 @@ int main(int argc, char** argv) {
       {"calls", calls}, {"evaluation_order", evaluation_order}, {"recursion", recursion},
       {"returns", returns}, {"numeric_text", numeric_text}, {"step_markers", step_markers},
       {"static_errors", static_errors}, {"ownership", ownership},
+      {"arrays", arrays},
   };
   if (argc == 2) {
     for (const auto& test : cases) {

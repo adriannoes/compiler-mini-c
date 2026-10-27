@@ -388,10 +388,25 @@ Lookup terms: `constant folding`, `constant propagation`, `dead code elimination
 
 ## Phase 11: Optional language features (pick 1-2)
 
+Status: in progress. This phase adds local arrays with constant lengths.
+
+The approved rules live in [language.md](language.md#phase-11-local-arrays).
+AST and bytecode ownership live in [architecture.md](architecture.md#local-array-representation).
+Delivery uses three local increments:
+
+1. Bracket syntax, owned AST data, name and type rules, bounded lengths, bytecode, and focused tests.
+2. Per-activation storage, indexed reads and writes, bounds checks, and equivalent execution across all three engines.
+3. Examples, command integration, regression tests, documentation, and normal and sanitizer validation.
+
+Increment 1 provides local `int` and `bool` array declarations with lengths from 1 through 1024.
+Nine front-end test groups and one compiler group cover syntax, bindings, types, sizes, and ordered index validation.
+Whole arrays remain outside value expressions, function signatures, copies, and initializers.
+Storage and final execution validation remain pending.
+
 Lookup terms (by choice): `array`, `struct`, `record`, `garbage collection`, `mark and sweep`, `reference counting`
 
-- [ ] Choose features after stage B + local opts feel solid
-- [ ] Document chosen features in [language.md](language.md) before implementing
+- [x] Choose features after stage B + local opts feel solid
+- [x] Document chosen features in [language.md](language.md) before implementing
 - [ ] Tests and examples for each feature
 
 ## Phase 12: LLVM literacy (conversation fluency)

@@ -21,6 +21,8 @@ const char* token_kind_name(TokenKind kind) {
     case TokenKind::RightParen: return "RIGHT_PAREN";
     case TokenKind::LeftBrace: return "LEFT_BRACE";
     case TokenKind::RightBrace: return "RIGHT_BRACE";
+    case TokenKind::LeftBracket: return "LEFT_BRACKET";
+    case TokenKind::RightBracket: return "RIGHT_BRACKET";
     case TokenKind::Semicolon: return "SEMICOLON";
     case TokenKind::Comma: return "COMMA";
     case TokenKind::Assign: return "ASSIGN";

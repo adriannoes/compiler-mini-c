@@ -598,6 +598,39 @@ Reachability asks whether control flow can visit an instruction.
 Liveness asks whether later code can read a value before another assignment replaces it.
 Store elimination needs liveness information and error analysis. The current optimizer preserves stores and performs no global constant propagation.
 
+## Local array representation
+
+`ArrayExtent` owns decimal length text and its source position within a `VarDecl`.
+`IndexExpr` owns the array name and its index expression, with the existing expression position at the name.
+This resembles a named call and avoids treating an entire array as an expression value.
+All earlier scalar AST layouts and print forms retain their existing behavior.
+
+Name resolution binds indexed reads and writes directly to the declaration symbol and also visits the index expression.
+Type analysis rejects whole-array uses, scalar indexing, non-integer indices, and incompatible element assignments.
+It checks lengths without converting ordinary integer expressions or changing their runtime range rules.
+`TypeAnalysis::array_length` returns the checked extent for a declaration in the existing AST.
+Its declaration map retains the same AST lifetime requirement as the other analysis maps.
+
+`BytecodeLocal::array_length` is zero for a scalar and positive for a fixed array.
+The disassembler prints an array slot as `int[4]` or `bool[2]`, while scalar slot output stays unchanged.
+`RESET_LOCAL` will clear scalar or array storage according to that metadata.
+Three indexed instructions use a local slot operand:
+
+| Instruction | Stack effect | Behavior |
+|-------------|--------------|----------|
+| `CHECK_INDEX` | Retain the top index | Check a write address before its right operand |
+| `LOAD_ELEMENT` | Pop the index, push the element | Check bounds and reject an element without a value |
+| `STORE_ELEMENT` | Pop the value and index, push the value | Store the scalar without reading the old element |
+
+The compiler emits a target step, index expression, and `CHECK_INDEX` before an indexed assignment value.
+`STORE_ELEMENT` follows that value, so nested calls preserve the saved index below their own argument range.
+Reads use `LOAD_ELEMENT` after the index expression and its source steps.
+The type checker and compiler retain the same scalar `int`, `bool`, and `void` APIs for values and function signatures.
+
+Nine front-end groups cover bracket positions, AST ownership, grammar limits, bindings, element types, lengths, errors, and lowering order.
+The compiler stack-analysis tests also cover indexed operations inside calls, conditions, and loops.
+The first increment leaves array execution behind explicit runtime diagnostics until the storage implementation arrives.
+
 ## Planned pipeline
 
 ```text

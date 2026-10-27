@@ -95,13 +95,21 @@ class Parser {
   StmtPtr declaration() {
     const auto declared_type = type();
     const auto& name = expect(TokenKind::Identifier, "Expected a variable name.");
+    std::optional<ArrayExtent> extent;
     ExprPtr initializer;
-    if (match({TokenKind::Assign})) {
+    if (match({TokenKind::LeftBracket})) {
+      const auto& length = expect(TokenKind::Integer, "Expected an integer array length.");
+      extent = ArrayExtent{length.lexeme, length.location};
+      expect(TokenKind::RightBracket, "Expected \"]\" after array length.");
+      if (peek().kind == TokenKind::Assign) {
+        throw ParseError(peek().location, "Array initializers are not supported.");
+      }
+    } else if (match({TokenKind::Assign})) {
       initializer = expression();
     }
     expect(TokenKind::Semicolon, "Expected \";\" after declaration.");
     return std::make_unique<Stmt>(Stmt{VarDecl{name.location, declared_type, name.lexeme,
-                                             std::move(initializer)}});
+                                             std::move(initializer), std::move(extent)}});
   }
 
   StmtPtr statement() {
@@ -155,7 +163,7 @@ class Parser {
     auto target = logical_or();
     if (match({TokenKind::Assign})) {
       const auto location = previous().location;
-      if (!std::holds_alternative<NameExpr>(target->node)) {
+      if (!std::holds_alternative<NameExpr>(target->node) && !std::holds_alternative<IndexExpr>(target->node)) {
         throw ParseError(location, "Expected a name before \"=\".");
       }
       auto value = assignment();
@@ -217,6 +225,11 @@ class Parser {
     }
     if (match({TokenKind::Identifier})) {
       const auto& name = previous();
+      if (match({TokenKind::LeftBracket})) {
+        auto index = expression();
+        expect(TokenKind::RightBracket, "Expected \"]\" after array index.");
+        return make_expr(name.location, IndexExpr{name.lexeme, std::move(index)});
+      }
       if (!match({TokenKind::LeftParen})) {
         return make_expr(name.location, NameExpr{name.lexeme});
       }

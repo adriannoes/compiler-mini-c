@@ -99,6 +99,11 @@ class BytecodeCompiler {
 
   void compile(const NameExpr&, const Expr& source) { emit(OpCode::LoadLocal, source.location, slot(source)); }
 
+  void compile(const IndexExpr& node, const Expr& source) {
+    expression(*node.index);
+    emit(OpCode::LoadElement, source.location, slot(source));
+  }
+
   void compile(const UnaryExpr& node, const Expr& source) {
     if (node.op == TokenKind::Minus) {
       if (const auto* literal = std::get_if<IntegerExpr>(&node.operand->node)) {
@@ -128,6 +133,14 @@ class BytecodeCompiler {
   }
 
   void compile(const AssignmentExpr& node, const Expr& source) {
+    if (const auto* index = std::get_if<IndexExpr>(&node.target->node)) {
+      emit(OpCode::Step, node.target->location);
+      expression(*index->index);
+      emit(OpCode::CheckIndex, node.target->location, slot(*node.target));
+      expression(*node.value);
+      emit(OpCode::StoreElement, node.target->location, slot(*node.target));
+      return;
+    }
     expression(*node.value);
     emit(OpCode::StoreLocal, source.location, slot(*node.target));
   }
@@ -159,6 +172,7 @@ class BytecodeCompiler {
 
   void compile(const VarDecl& node) {
     const auto index = local(declarations_.at(&node), node.name, node.type, node.location);
+    current_->locals[index].array_length = analysis_.array_length(node).value_or(0);
     emit(OpCode::ResetLocal, node.location, index);
     if (node.initializer) {
       expression(*node.initializer);

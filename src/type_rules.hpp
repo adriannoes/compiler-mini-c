@@ -9,6 +9,8 @@ namespace minic {
 
 enum class Type { Int, Bool, Void };
 
+inline constexpr std::size_t max_array_length = 1024;
+
 const char* type_name(Type type);
 
 struct TypeError : std::runtime_error {

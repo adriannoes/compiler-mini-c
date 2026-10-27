@@ -70,6 +70,13 @@ class AstPrinter {
     print(*node.operand, depth + 1);
   }
 
+  void print(const IndexExpr& node, SourceLocation location, std::size_t depth) {
+    indent(depth);
+    output_ << "Index " << std::quoted(node.name);
+    position(location);
+    print(*node.index, depth + 1);
+  }
+
   void print(const BinaryExpr& node, SourceLocation location, std::size_t depth) {
     indent(depth);
     output_ << "Binary " << token_kind_name(node.op);
@@ -122,6 +129,11 @@ class AstPrinter {
     output_ << "Variable " << std::quoted(node.name);
     position(node.location);
     print(node.type, depth + 1);
+    if (node.array_extent) {
+      indent(depth + 1);
+      output_ << "Length " << std::quoted(node.array_extent->text);
+      position(node.array_extent->location);
+    }
     if (node.initializer) {
       print(*node.initializer, depth + 1);
     }

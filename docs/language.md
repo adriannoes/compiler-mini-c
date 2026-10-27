@@ -721,6 +721,52 @@ The optimization example prints `24` and returns status `0`. Its code decreases 
 The runtime-error example retains its diagnostic at line 3, column 15, with status `1` and no standard output.
 Constant pools retain unused entries. Optimization preserves function indices, local metadata, and source positions for instructions that remain.
 
+## Phase 11 local arrays
+
+The approved extension adds local, one-dimensional arrays of `int` or `bool`.
+Declarations use `int values[4];` or `bool flags[2];`. Each declaration still introduces one name within a block.
+The length is decimal integer syntax with a static range from 1 through 1024, including decimal leading zeroes.
+The parser preserves the length text and position without converting it. Type analysis enforces the range after name resolution.
+The lexer adds `LEFT_BRACKET` and `RIGHT_BRACKET` for `[` and `]`, for 35 token types including `EOF`.
+
+The declaration syntax extends the phase 2 grammar:
+
+```ebnf
+declaration -> type IDENTIFIER ("[" INTEGER "]" | ("=" expression)?) ";"
+primary     -> IDENTIFIER "[" expression "]" | phase-2-primary
+```
+
+Only a named array has indexing syntax. Indexing has primary-expression precedence and does not permit another index or call suffix.
+The parser also accepts indexed assignment targets, including a parenthesized indexed expression.
+Array initializers, whole-array assignment, array arguments, array returns, and multidimensional arrays remain outside the language.
+Function parameters and returns remain scalar. Scalar element values can serve as ordinary arguments and results.
+Structs, pointers, dynamic allocation, and garbage collection remain outside this phase.
+
+An indexed use binds to the array declaration with the existing `Read` or `Write` use kind.
+Its index expression resolves in the same lexical scope, before the right operand of an assignment.
+Array names follow the existing declaration visibility, shadowing, and collision rules.
+Using an array name without an index is a type error. Indexing a scalar is also a type error.
+The index must have type `int`, and the selected element has the declared scalar type without coercion.
+
+Each function activation owns its array storage, and every executed declaration clears all its elements.
+Elements have no value until assignment initializes them, independently of other elements.
+An access requires an index from zero through length minus one. A missing element value and an invalid index produce positioned runtime errors.
+Both errors identify the indexed use at the array name position.
+
+An indexed assignment evaluates and checks its index before evaluating its right operand.
+It then writes through that saved index without reading the previous element value, and returns the assigned scalar value.
+This order preserves the selected element when the right operand changes variables used by the index or calls another function.
+An indexed read evaluates its index, checks the bounds, and then reads the element.
+
+Each indexed access consumes one source step, including an assignment target, in addition to the steps of its index expression.
+The assignment expression consumes its existing parent step before the indexed target and right operand.
+An array length is declaration metadata, so clearing storage adds no length-expression or per-element source steps.
+The interpreter, original VM, and optimized VM must agree on values, error positions, and execution limits.
+The optimizer treats element checks, reads, and writes as barriers and retains their effects and possible errors.
+
+The first increment provides syntax, bindings, types, and bytecode. Array execution follows in the next increment.
+The existing commands and public scalar `Value` contract remain unchanged for programs without arrays.
+
 ## Planned language scope
 
 The following language scope grows phase by phase (see [roadmap.md](roadmap.md)):
@@ -731,7 +777,8 @@ The following language scope grows phase by phase (see [roadmap.md](roadmap.md))
 - Functions with parameters
 
 Phase 1 covers all nine keywords, fifteen operators, and the comma.
-The lexer recognizes 33 token types, including identifiers, integers, punctuation, and `EOF`.
+The original phase 1 vocabulary contains 33 token types, including identifiers, integers, punctuation, and `EOF`.
+Phase 11 adds the bracket tokens for a total of 35.
 The lexer recognizes token boundaries but does not check statement structure or types.
 
 ## Out of scope (start)
