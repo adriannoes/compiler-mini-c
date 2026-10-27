@@ -336,7 +336,7 @@ The complete examples live in [scopes.resolution](../tests/scopes.resolution) an
 Type checking determines whether expressions and declarations use compatible Mini-C types.
 These rules define the approved phase 5 scope without changing the grammar or name rules.
 The front-end library provides `check_types` analysis and the basic type rules.
-The `--check` command remains pending.
+The `--check` command performs the complete analysis independently of the earlier command modes.
 
 ### Types and expressions
 
@@ -402,6 +402,33 @@ The token, AST, and resolution commands do not perform type checking.
 The checker does not enforce numeric limits, analyze definite initialization, require `main`, or execute code.
 For example, `int x = x;` passes type analysis without establishing that `x` holds an initialized value.
 Division by zero and integer overflow remain outside this analysis because the checker does not evaluate expressions.
+
+### Type-check command
+
+After the build, operate `./build/minic --check examples/types.mc` from the repository root.
+The command completes lexing, parsing, name resolution, and type analysis in that order.
+On success, it returns `0` without output on either stream.
+On failure, it returns `1`, prints no standard output, and writes the diagnostic to standard error.
+It stops at the first error with no partial result.
+
+Diagnostics use `file:line:column: error: message`.
+Type mismatches report the expected type and the actual type.
+Invalid call counts report the function name and the expected and actual argument counts.
+Other diagnostics identify an invalid `void` declaration, an invalid return form, or a missing return guarantee.
+
+| Error | Reported position |
+|-------|-------------------|
+| Variable or parameter with type `void` | Written type keyword |
+| Unary, binary, or assignment mismatch | Operator |
+| Initializer or argument mismatch | Initializer or argument expression |
+| Invalid call argument count | Called function name |
+| Invalid return form or incompatible return type | `return` keyword |
+| Missing return guarantee | Function name |
+
+The [type example](../examples/types.mc) succeeds with empty output.
+The [type-error example](../examples/type_error.mc) succeeds in the AST and resolution modes but fails in the type-check mode.
+Its initializer reports `Expected type bool. Received int.` at line 3, column 16.
+An empty program also succeeds because the checker does not require `main`.
 
 ## Planned language scope
 

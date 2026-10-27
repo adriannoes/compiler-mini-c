@@ -63,7 +63,7 @@ The `--resolve` command prints scopes, symbols, and the declaration selected for
 Phase 5 provides `minic::check_types` and explicit rules for `int`, `bool`, and `void` in the front-end library.
 The approved [type rules](docs/language.md#phase-5-type-rules) define operators, declarations, calls, conditions, and returns.
 The analysis returns expression types and owns its name-resolution result without modifying the AST.
-The `--check` command remains pending.
+The `--check` command analyzes the complete program and returns `0` without output when the analysis succeeds.
 
 ## Build and use
 
@@ -81,6 +81,8 @@ cmake --build build
 ./build/minic --ast examples/lexer.mc
 ./build/minic --resolve examples/scopes.mc
 ./build/minic --resolve examples/recursion.mc
+./build/minic --check examples/types.mc
+./build/minic --check examples/recursion.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -116,6 +118,25 @@ Name resolution does not analyze types, argument counts, return compatibility, o
 For example, `int x = x;` resolves to its own declaration without establishing that `x` holds an initialized value.
 The existing expression example remains valid with `--ast` but fails with `--resolve` because `left` and `right` have no declarations.
 
+The [type example](examples/types.mc) demonstrates matching calls, boolean conditions, and compatible returns.
+The [type-error example](examples/type_error.mc) has valid syntax and names, but assigns an integer initializer to a boolean variable.
+Both `--ast` and `--resolve` accept that file.
+From the repository root, operate the type-check command after the build:
+
+```bash
+./build/minic --check examples/type_error.mc
+```
+
+The command returns `1`, prints no standard output, and writes this diagnostic to standard error:
+
+```text
+examples/type_error.mc:3:16: error: Expected type bool. Received int.
+```
+
+Type checking preserves the existing grammar and does not evaluate expressions or execute programs.
+It does not enforce numeric limits, analyze definite initialization, or require `main`.
+Non-void functions require a guaranteed return under the [conservative return rules](docs/language.md#functions-and-conditions).
+
 ## Tests
 
 After the build, run the tests from the repository root:
@@ -124,10 +145,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 101 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, and command behavior.
+The 119 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-The original 80 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+All 119 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -155,7 +176,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 2 | Recursive-descent parser | done |
 | 3 | Parsing theory (First/Follow, bottom-up) | done |
 | 4 | Symbol table / scopes | done |
-| 5 | Type checking | in progress |
+| 5 | Type checking | done |
 | 6 | Tree-walk interpreter (stage A) | pending |
 | 7 | Functions and control flow | pending |
 | 8 | Bytecode compiler | pending |
@@ -167,5 +188,6 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 
 Phase 2 delivers syntax and AST output, and phase 3 records the related theory.
 Phase 4 adds name resolution without changing those syntax contracts.
-Type analysis and execution remain in their later roadmap phases.
+Phase 5 adds type analysis and the independent `--check` command.
+Execution remains in the later roadmap phases.
 See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.

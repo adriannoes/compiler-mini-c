@@ -83,7 +83,12 @@ if(BUILD_TESTING)
                         resolve_hello resolve_scopes resolve_recursion resolve_empty
                         resolve_undeclared resolve_redeclared resolve_category
                         resolve_syntax_error resolve_lexical_error resolve_missing_file
-                        resolve_missing_argument resolve_extra_argument resolve_names_only)
+                        resolve_missing_argument resolve_extra_argument resolve_names_only
+                        check_hello check_scopes check_recursion check_calls check_control_flow
+                        check_lexer check_types check_type_error check_arity check_return_path
+                        check_void_parameter check_syntax_error check_lexical_error
+                        check_resolution_error check_missing_file check_missing_argument
+                        check_extra_argument check_empty)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"

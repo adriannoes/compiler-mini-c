@@ -180,7 +180,7 @@ Lookup terms: `symbol table`, `environment`, `lexical scope`, `static scope`, `n
 
 ## Phase 5: Semantic analysis / types
 
-Status: in progress.
+Status: complete.
 
 The approved rules live in [language.md](language.md#phase-5-type-rules).
 The analysis design lives in [architecture.md](architecture.md#type-rules-and-analysis-design).
@@ -196,15 +196,20 @@ Five new test groups cover type syntax, arithmetic, comparisons, logic, and equa
 Increment 2 is complete: `check_types` returns expression types and owns the matching name-resolution result.
 Sixteen new API test groups cover expressions, declarations, assignments, shadowing, calls, conditions, returns, and return guarantees.
 They also cover error priority, AST preservation, result ownership, and accepted numeric and initialization limits.
-The command and final sanitizer validation remain pending. Phase 5 is not complete.
+
+Increment 3 is complete: `--check` accepts valid programs without output and reports positioned errors with return code `1`.
+The type example succeeds, and the type-error example separates valid syntax and names from invalid types.
+Eighteen new command tests cover examples, errors, stage priority, files, arguments, and empty programs.
+All 119 tests pass in both normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings.
+The prose scan reports no findings. Execution remains outside phase 5.
 
 Lookup terms: `semantic analysis`, `type checking`, `type system`, `type environment`, `syntax-directed definition`, `attribute grammar`, `annotated AST`, `arity`, `return path`
 
 - [x] Check `int` / `bool` / `void` programs
 - [x] Clear compile-time diagnostics
 - [x] Tests for type errors
-- [ ] Type-check command and examples
-- [ ] Final normal and sanitizer validation
+- [x] Type-check command and examples
+- [x] Final normal and sanitizer validation
 
 ## Phase 6: Tree-walk interpreter (stage A)
 

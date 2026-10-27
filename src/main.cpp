@@ -2,6 +2,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "resolution_printer.hpp"
+#include "type_checker.hpp"
 
 #include <fstream>
 #include <iomanip>
@@ -19,10 +20,12 @@ void print_usage() {
       << "  minic --tokens <file>\n"
       << "  minic --ast <file>\n"
       << "  minic --resolve <file>\n"
+      << "  minic --check <file>\n"
       << "\n"
       << "Print token types, source text, and line:column positions.\n"
       << "Use --ast to print the syntax tree.\n"
-      << "Use --resolve to print scopes, symbols, and name bindings.\n";
+      << "Use --resolve to print scopes, symbols, and name bindings.\n"
+      << "Use --check to analyze Mini-C types.\n";
 }
 
 }  // namespace
@@ -38,7 +41,12 @@ int main(int argc, char** argv) {
 
   const bool ast_mode = argc >= 2 && std::string(argv[1]) == "--ast";
   const bool resolve_mode = argc >= 2 && std::string(argv[1]) == "--resolve";
-  if (argc != 3 || (!ast_mode && !resolve_mode && std::string(argv[1]) != "--tokens")) {
+  const bool check_mode = argc >= 2 && std::string(argv[1]) == "--check";
+  if (argc != 3 || (!ast_mode && !resolve_mode && !check_mode && std::string(argv[1]) != "--tokens")) {
+    if (check_mode) {
+      std::cerr << "minic: error: Expected --check <file>. Use --help for usage.\n";
+      return 1;
+    }
     if (resolve_mode) {
       std::cerr << "minic: error: Expected --resolve <file>. Use --help for usage.\n";
       return 1;
@@ -76,6 +84,9 @@ int main(int argc, char** argv) {
       const auto program = minic::parse(tokens);
       const auto resolution = minic::resolve_names(program);
       std::cout << minic::print_resolution(resolution);
+    } else if (check_mode) {
+      const auto program = minic::parse(tokens);
+      minic::check_types(program);
     } else {
       for (const auto& token : tokens) {
         std::cout << token.location.line << ':' << token.location.column << ' '
@@ -92,6 +103,10 @@ int main(int argc, char** argv) {
               << error.location.column << ": error: " << error.what() << '\n';
     return 1;
   } catch (const minic::ResolveError& error) {
+    std::cerr << path << ':' << error.location.line << ':'
+              << error.location.column << ": error: " << error.what() << '\n';
+    return 1;
+  } catch (const minic::TypeError& error) {
     std::cerr << path << ':' << error.location.line << ':'
               << error.location.column << ": error: " << error.what() << '\n';
     return 1;

@@ -29,12 +29,17 @@ The command reads a source file and passes its text to `minic::lex`.
 The lexer separates the text into tokens, which are units such as names and numbers.
 The `--tokens` command prints the tokens after the lexer succeeds.
 The `--ast` command passes tokens to the parser and prints the complete tree after syntax parsing succeeds.
+
 The `--resolve` command also resolves names and prints scopes, symbols, and bindings after the analysis succeeds.
+The `--check` command also analyzes Mini-C types and returns success without printing output.
 
 ```text
-source (.mc) -> minic::lex -> tokens -> --tokens output
-                                -> minic::parse -> Program -> --ast output
-                                                          -> minic::resolve_names -> NameResolution -> --resolve output
+source (.mc) -> minic::lex -> tokens
+tokens -> --tokens output
+tokens -> minic::parse -> Program
+Program -> --ast output
+Program -> minic::resolve_names -> NameResolution -> --resolve output
+Program -> minic::check_types -> TypeAnalysis -> --check status
 ```
 
 `src/token.hpp` defines token types and source positions.
@@ -55,7 +60,7 @@ The lexer throws `LexError` at the first unsupported character or unterminated b
 The command adds the file path and prints the diagnostic to standard error.
 The command emits no partial token list on failure.
 
-The `minic_frontend` CMake library contains tokens, the lexer, the parser, the symbol table, and name resolution.
+The `minic_frontend` CMake library contains tokens, the lexer, the parser, the symbol table, name resolution, and type analysis.
 It also contains the AST and resolution printers.
 Both `minic` and the unit tests link to that library.
 CTest also runs command tests against the built executable.
@@ -245,6 +250,7 @@ The result borrows AST nodes, so the caller must keep the tree alive, unchanged,
 This adds auxiliary storage but leaves all earlier analysis modes independent.
 
 `TypeAnalysis::type_of(const Expr&)` returns an optional type for an expression in the analyzed tree.
+It returns `std::nullopt` for an expression outside that tree.
 `resolution()` exposes a read-only view of the owned bindings and symbol table.
 Result copies and moves preserve these associations, but the AST must retain its original nodes.
 Deleted overloads reject temporary programs to prevent immediately expired references.
@@ -261,9 +267,11 @@ Loops never establish it because the checker does not evaluate conditions.
 Traversal continues after a guaranteed return to detect type errors in later statements.
 This limit avoids a control-flow graph but rejects some valid nonterminating functions.
 
-The final increment will add `--check <file>` with empty standard output and return code `0` on success.
-Errors will use the existing positioned diagnostic format and return code `1`.
-The command will not execute the program or require a `main` function.
+`--check <file>` uses empty standard output and return code `0` on success.
+Errors use the existing positioned diagnostic format and return code `1`.
+The command keeps the `Program` alive during the complete analysis.
+It does not execute the program or require a `main` function.
+Recursive AST traversal still depends on the available C++ call stack.
 
 ## Type analysis learning note
 
@@ -271,6 +279,22 @@ The AST records the written type, but a name use needs the declaration selected 
 Name resolution supplies that declaration, and type analysis uses it without another scope search.
 Operator rules then combine child types into a parent type.
 The separate result makes those computed types observable without adding semantic state to the syntax tree.
+
+## Type analysis validation and limits
+
+Phase 5 adds five type-rule test groups, sixteen API groups, and eighteen command tests.
+The complete suite contains 119 CTest tests, including the original token, AST, and resolution contracts.
+All 119 pass in both normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
+
+The API tests inspect computed expression types and the declarations selected by the owned name-resolution result.
+They also cover signature priority, conservative return guarantees, later statements after returns, AST preservation, and result copies and moves.
+Command tests compare empty success output, exact diagnostics, and exit codes.
+The type-error example also retains successful AST and name-resolution output.
+
+Type analysis does not establish numeric representability, definite initialization, absence of division by zero, or termination.
+It does not execute code, and its conservative return rules reject some valid programs with nonterminating loops.
+Execution and runtime error behavior remain in later roadmap phases.
 
 ## Planned pipeline
 
