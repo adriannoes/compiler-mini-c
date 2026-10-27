@@ -159,13 +159,18 @@ Delivery uses three local increments:
 
 Increment 1 is complete: the table owns symbols and scopes while declarations remain in the AST.
 Four new test groups cover declarations, lookup and isolation, redeclarations, and identifier stability.
-The resolver API and command remain pending. Phase 4 is not complete.
+Increment 2 is complete: `resolve_names` returns separate bindings for reads, assignment targets, and calls.
+Eleven resolver test groups cover name errors, scope isolation, declaration order, category rules, and recursive function visibility.
+They also cover traversal, AST preservation, result moves, and the separation from type analysis.
+The resolution command and final sanitizer validation remain pending. Phase 4 is not complete.
 
 Lookup terms: `symbol table`, `environment`, `lexical scope`, `static scope`, `nested scopes`, `shadowing`, `name resolution`, `declaration`, `binding`
 
 - [x] Nested environments
-- [ ] Errors for undeclared / redeclared names
-- [ ] Tests for scope edge cases
+- [x] Errors for undeclared / redeclared names
+- [x] Tests for scope edge cases
+- [ ] Deterministic resolution command and examples
+- [ ] Final normal and sanitizer validation
 
 ## Phase 5: Semantic analysis / types
 

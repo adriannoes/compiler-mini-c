@@ -13,6 +13,7 @@ endif()
 add_library(minic_frontend
   src/ast_printer.cpp
   src/lexer.cpp
+  src/name_resolution.cpp
   src/parser.cpp
   src/symbol_table.cpp
   src/token.cpp
@@ -25,6 +26,13 @@ target_link_libraries(minic PRIVATE minic_frontend)
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_resolution_tests tests/name_resolution_test.cpp)
+  target_link_libraries(minic_resolution_tests PRIVATE minic_frontend)
+  foreach(case IN ITEMS empty bindings undeclared redeclarations shadowing isolation
+                        visibility functions categories traversal names_only)
+    add_test(NAME resolution.${case} COMMAND minic_resolution_tests ${case})
+  endforeach()
+
   add_executable(minic_symbol_table_tests tests/symbol_table_test.cpp)
   target_link_libraries(minic_symbol_table_tests PRIVATE minic_frontend)
   foreach(case IN ITEMS declarations scopes redeclarations stable_ids)

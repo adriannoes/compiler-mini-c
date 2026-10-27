@@ -55,9 +55,10 @@ See [docs/language.md](docs/language.md) for lexical rules, grammar, precedence,
 Phase 3 study notes include worked FIRST/FOLLOW sets, LL(1) decisions, and a shift/reduce trace.
 They compare LR constructions and parser-generator choices in [docs/theory-parsing.md](docs/theory-parsing.md).
 
-Phase 4 starts with a symbol table and nested scopes in the front-end library.
+Phase 4 provides a symbol table, nested scopes, and `minic::resolve_names` in the front-end library.
 The approved [name rules](docs/language.md#phase-4-name-rules) record visibility, shadowing, and redeclaration policies.
-Name resolution through the AST and a command for its output remain pending.
+The analysis returns separate declaration bindings without modifying the AST.
+A command for its output remains pending.
 
 ## Build and use
 
@@ -107,7 +108,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 56 tests cover tokens, positions, lexical errors, AST structure, syntax errors, symbol tables, and command behavior.
+The 67 tests cover tokens, positions, lexical errors, AST structure, syntax errors, name resolution, and command behavior.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 The original 52 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.

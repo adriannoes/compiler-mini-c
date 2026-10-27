@@ -251,7 +251,8 @@ The existing `--tokens` mode performs no parsing and preserves its output, diagn
 
 Name resolution connects each name use to its declaration.
 These rules define the approved phase 4 scope without changing the grammar.
-The front-end library provides the symbol table. AST traversal and the resolution command remain pending.
+The front-end library provides the symbol table and `resolve_names` analysis.
+The resolution command remains pending.
 
 ### Scopes and declarations
 

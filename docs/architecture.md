@@ -176,14 +176,34 @@ Insertion rejects a duplicate in that scope with `ResolveError`, which carries t
 Parent lookup, shadowing, and sibling isolation use the same table operations.
 
 The approved [name rules](language.md#phase-4-name-rules) define function and local visibility.
-The next increment will connect those rules to AST traversal through `resolve_names(const Program&)`.
-Its `NameResolution` result will own the table and separate use-to-symbol bindings.
-Each binding will identify a borrowed expression, its symbol, and its read, write, or call role.
+`resolve_names(const Program&)` connects those rules to AST traversal without changing the tree.
+Its `NameResolution` result owns the table and separate use-to-symbol bindings.
+Each binding identifies a borrowed expression, its symbol, its use scope, and its read, write, or call role.
 This costs auxiliary storage but preserves syntax-only parsing and supplies declarations for later type analysis.
+
+`NameResolution::binding(const Expr&)` returns a binding pointer or `nullptr` for an expression without a binding.
+`table()` and `bindings()` expose read-only views of the owned data.
+A hash map connects expression addresses to binding indices.
+Result copies and moves preserve these indices, but the AST must retain its original nodes.
+Deleted overloads reject temporary programs to prevent references to declarations that expire at the end of the call expression.
+
+The resolver registers all function names before it visits bodies, so forward and recursive calls use the same lookup operation.
+Parameters and outer body declarations share a scope. Only nested blocks create additional scopes.
+Local insertion precedes initializer traversal, so `int x = x;` binds to the newly declared variable.
+An undeclared use or category mismatch throws `ResolveError` before the caller receives a result.
+The resolver does not inspect `TypeSyntax` or convert integer text.
 
 The final increment will add `print_resolution(const NameResolution&)` and `--resolve <file>`.
 Output will use vector order instead of hash-map iteration, so symbol identifiers and text remain deterministic.
 The existing token and AST modes will not invoke the new analysis.
+
+## Name resolution learning note
+
+Lexical scope determines a binding from source structure, without executing the program.
+An outer lookup permits access to parameters and function names from nested blocks.
+The resolver records the selected declaration at each use, so a later local declaration cannot change an earlier binding.
+A completed scope map alone cannot preserve that distinction.
+Separate bindings keep the earlier choice available to later compiler stages.
 
 ## Planned pipeline
 
