@@ -29,12 +29,24 @@ target_link_libraries(minic_bytecode PUBLIC minic_frontend)
 add_library(minic_runtime src/runtime.cpp src/interpreter.cpp)
 target_link_libraries(minic_runtime PUBLIC minic_frontend)
 
+add_library(minic_vm src/vm.cpp)
+target_link_libraries(minic_vm PUBLIC minic_bytecode minic_runtime)
+
 add_executable(minic src/main.cpp)
 target_link_libraries(minic PRIVATE minic_runtime minic_bytecode)
 
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_vm_tests tests/vm_test.cpp)
+  target_link_libraries(minic_vm_tests PRIVATE minic_vm)
+  foreach(case IN ITEMS arithmetic booleans assignments scopes initialization evaluation_order
+                        short_circuit conditionals loops returns entry_selection numeric_errors
+                        step_limits ownership invalid_bytecode)
+    add_test(NAME vm.${case} COMMAND minic_vm_tests ${case})
+  endforeach()
+  set_tests_properties(vm.step_limits PROPERTIES TIMEOUT 10)
+
   add_executable(minic_bytecode_compiler_tests tests/bytecode_compiler_test.cpp)
   target_link_libraries(minic_bytecode_compiler_tests PRIVATE minic_bytecode)
   foreach(case IN ITEMS empty entry_independent expressions assignments scopes loop_slots

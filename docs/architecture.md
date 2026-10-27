@@ -486,6 +486,34 @@ It prints structure without executing instructions or validating arbitrary calle
 Phase 9 retains VM execution and interpreter comparisons. Phase 10 retains optimizations.
 Bytecode compilation and printing still traverse finite C++ structures and retain the existing native-stack limit for deeply nested source.
 
+## VM execution
+
+The `minic_vm` library executes compiler-produced bytecode through an iterative instruction loop.
+It links to `minic_bytecode` and `minic_runtime` and shares the existing numeric helpers and owned `Value` type.
+`ExecutionLimits` lives in `runtime.hpp`, which `interpreter.hpp` still includes. Existing interpreter API calls remain compatible.
+The public API accepts a selected entry and optional positive execution limits, without performing another static analysis.
+
+The machine owns a vector of frames and a vector of temporary values for each execution.
+A frame records a function index, instruction index, stack base, and optional values for each local slot.
+The function metadata and instructions remain in the caller bytecode, which execution reads without modification.
+The machine copies instructions before dispatch and keeps no frame reference across frame growth.
+This design will support recursive Mini-C calls without adding recursive C++ calls.
+
+The stack base separates caller temporaries from the current activation.
+Stack operations guard that boundary, instruction and operand indices have bounds guards, and arithmetic guards operand types.
+An invalid executed instruction reports `std::invalid_argument`. `UNREACHABLE` reports an internal logic error if a typed non-void function falls through.
+The API expects compiler-produced control flow. These guards do not define a loader or verifier for arbitrary binary programs.
+
+`LOAD_CONSTANT` converts owned digits only when execution reaches the instruction.
+Unary and binary operations use the same checked helpers as the interpreter.
+`STORE_LOCAL` retains its top value, while `RESET_LOCAL` clears a declaration slot before its initializer.
+Conditional jumps pop their boolean, and absolute targets preserve compiler-generated short-circuit and loop paths.
+`STEP` alone charges the source budget, so synthetic instructions do not change the phase 7 limit contract.
+
+The first increment supports entry execution without internal calls and includes fifteen VM test groups.
+The tests cover operations, scopes, missing values, branches, loops, returns, entry rules, numeric errors, source steps, ownership, and invalid accesses.
+Calls, differential comparisons, command integration, and final sanitizer validation follow in the remaining increments.
+
 ## Planned pipeline
 
 ```text

@@ -317,8 +317,25 @@ Lookup terms: `intermediate representation`, `IR`, `three-address code`, `byteco
 
 ## Phase 9: VM (stage B, primary target)
 
+Status: in progress.
+
+The approved rules live in [language.md](language.md#phase-9-vm-rules).
+Frame and stack ownership live in [architecture.md](architecture.md#vm-execution).
+Delivery uses three local increments:
+
+1. The VM core, local slots, operations, jumps, source steps, entry rules, and focused tests.
+2. Explicit call frames, copied parameters, recursion, depth limits, and differential tests against the interpreter.
+3. The `--run-vm` command, example and command regressions, documentation, and normal and sanitizer validation.
+
+Increment 1 provides `execute_bytecode` in `minic_vm` for entry execution without internal calls.
+Fifteen test groups cover the core instructions, runtime diagnostics, source step counts, owned results, and guarded stack access.
+The shared `ExecutionLimits` definition moves to `runtime.hpp` without changing existing interpreter calls.
+Internal calls and final validation remain pending.
+
 Lookup terms: `virtual machine`, `stack machine`, `fetch-decode-execute`, `instruction dispatch`, `frame pointer`, `runtime error`
 
+- [x] VM core instructions and source step limits
+- [ ] Explicit function frames and call-depth limits
 - [ ] Execute the same examples as stages 6-7 on the VM
 - [ ] Differential tests: interpreter vs VM results where useful
 

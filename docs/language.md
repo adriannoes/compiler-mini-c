@@ -626,6 +626,42 @@ The factorial output includes a recursive `CALL 0`. The control-flow output incl
 The runtime-error output retains the uninitialized read as `LOAD_LOCAL`, without evaluating it.
 The `--run` command still executes through the tree-walk interpreter and retains all phase 7 limits and diagnostics.
 
+## Phase 9 VM rules
+
+The approved VM executes the phase 8 instruction set without changing the language or bytecode format.
+The API is `Value execute_bytecode(const BytecodeProgram&, const std::string& entry = "main")`.
+The overload `execute_bytecode(program, entry, limits)` accepts the shared `ExecutionLimits` type.
+The first increment executes entries, expressions, local slots, branches, loops, and returns. Internal calls follow in the second increment.
+
+The API accepts compiler-produced bytecode and performs no AST analysis during execution.
+The bytecode remains unchanged and supports repeated execution with independent runtime state.
+The result owns its data. Missing entries and entries with parameters retain the interpreter diagnostics and source positions.
+The entry defaults to `main` and requires zero parameters.
+
+Numeric operations reuse the signed 64-bit runtime helpers, including their range, overflow, and divisor diagnostics.
+Integer conversion occurs only at an executed `LOAD_CONSTANT` instruction.
+Local slots distinguish a missing value from an initialized integer or boolean.
+`RESET_LOCAL` clears each executed declaration before its initializer, including during repeated loop iterations.
+An executed read without a value reports the original variable name and use position.
+
+The VM uses explicit frames and an iterative instruction loop instead of recursive C++ calls.
+Each frame records its function, next instruction, local values, and base within the value stack.
+Calls will copy arguments into separate parameter slots after argument evaluation and preserve the caller values below that base.
+Returns will end only the current activation and restore the caller stack before supplying a non-void result.
+Void functions produce no stack value, including on implicit fallthrough.
+
+Only `STEP` consumes a source step. The shared budget continues across calls and returns.
+The defaults remain 1000000 steps and 128 active calls, including the entry as depth one.
+Both limits must be positive. Invalid limits produce `std::invalid_argument` before entry selection.
+Step exhaustion identifies the next source node. Depth exhaustion will identify the called name after argument evaluation.
+Indices, operand types, and stack access have guards that report malformed executed bytecode as `std::invalid_argument`.
+The API contract requires compiler-produced control flow, including `STEP` on execution cycles.
+
+The planned `--run-vm <file>` command will compile the source and execute `main` on the VM.
+It will retain `--run` output, diagnostic, and exit-status rules, including no partial result on errors.
+The existing `--run` command will continue to use the tree-walk interpreter.
+Optimizations and binary serialization remain outside phase 9.
+
 ## Planned language scope
 
 The following language scope grows phase by phase (see [roadmap.md](roadmap.md)):

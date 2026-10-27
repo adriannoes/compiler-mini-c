@@ -78,6 +78,10 @@ The [bytecode contract](docs/architecture.md#bytecode-format-and-compilation) de
 Compilation covers the current language after static analysis.
 The `--bytecode` command prints instructions without executing them. The VM remains in phase 9.
 
+Phase 9 starts with `minic::execute_bytecode` for entries, local variables, operations, branches, loops, and returns.
+It shares numeric rules and source step limits with the interpreter. Internal calls and command integration remain in progress.
+The [VM rules](docs/language.md#phase-9-vm-rules) define the approved execution contract.
+
 ## Build and use
 
 From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
@@ -218,10 +222,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 222 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, bytecode compilation, and commands.
+The 237 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, interpretation, bytecode, VM execution, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-All 222 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+The 222 tests from phase 8 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -253,7 +257,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 6 | Tree-walk interpreter (stage A) | done |
 | 7 | Functions and control flow | done |
 | 8 | Bytecode compiler | done |
-| 9 | VM (stage B, primary target) | pending |
+| 9 | VM (stage B, primary target) | in progress |
 | 10 | Local optimizations | pending |
 | 11 | Optional language features | pending |
 | 12 | LLVM literacy | pending |
