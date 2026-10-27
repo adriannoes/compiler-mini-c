@@ -213,11 +213,29 @@ Lookup terms: `semantic analysis`, `type checking`, `type system`, `type environ
 
 ## Phase 6: Tree-walk interpreter (stage A)
 
+Status: in progress.
+
+The approved subset and runtime policies live in [language.md](language.md#phase-6-execution-rules).
+Ownership and library boundaries live in [architecture.md](architecture.md#runtime-values-and-interpreter-design).
+Calls, `if`, and `while` retain their phase 7 scope.
+Only examples within the phase 6 subset require execution in this phase.
+Delivery uses three local increments:
+
+1. Runtime values, guarded integer operations, numeric tests, and the approved design record.
+2. AST execution, block environments, assignment, return propagation, entry selection, and API tests.
+3. Command integration, supported examples, diagnostics, documentation, and normal and sanitizer validation.
+
+Increment 1 is complete: `minic_runtime` provides owned values and guarded signed 64-bit operations.
+Six new test groups cover value formatting, literal limits, arithmetic, overflow, division and remainder, and logical operations.
+The interpreter and command remain pending. Phase 6 is not complete.
+
 Lookup terms: `interpreter`, `tree-walk interpreter`, `evaluation`, `operational semantics`, `environment`, `dynamic error`
 
-- [ ] Evaluate AST directly
-- [ ] Run `examples/` end to end
+- [x] Runtime values and numeric operations
+- [ ] Evaluate supported AST nodes directly
+- [ ] Run phase 6 examples end to end
 - [ ] Interpreter tests
+- [ ] Final normal and sanitizer validation
 
 ## Phase 7: Functions and control flow
 

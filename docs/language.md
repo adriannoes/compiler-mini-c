@@ -430,6 +430,77 @@ The [type-error example](../examples/type_error.mc) succeeds in the AST and reso
 Its initializer reports `Expected type bool. Received int.` at line 3, column 16.
 An empty program also succeeds because the checker does not require `main`.
 
+## Phase 6 execution rules
+
+The phase 6 interpreter evaluates expressions, declarations, assignments, blocks, empty statements, and returns.
+Function calls, `if`, and `while` remain in phase 7.
+Reaching an unsupported node produces a runtime error.
+The value library is available, but AST execution and the command remain pending.
+
+### Values and numeric limits
+
+Execution uses signed 64-bit integers, booleans, and `void` with no value.
+Integers range from `-9223372036854775808` through `9223372036854775807`.
+Only execution enforces this range. The earlier analysis modes retain their existing contracts.
+Decimal leading zeroes do not change the base.
+The interpreter converts only literals that it evaluates.
+
+A minus directly applied to integer literal syntax permits `-9223372036854775808` without first constructing an invalid positive value.
+Parentheses do not change this rule because the AST does not retain them.
+The positive literal `9223372036854775808` remains outside the range.
+Negating the minimum integer value produces an overflow error.
+The source text and AST retain the original literal digits.
+
+Addition, subtraction, multiplication, and negation report overflow before an invalid C++ calculation occurs.
+Division truncates toward zero. A nonzero remainder has the sign of the left operand.
+Division and remainder by zero produce runtime errors.
+Both division and remainder of the minimum integer by `-1` produce overflow errors.
+Integer operations do not wrap around the limits.
+
+### Evaluation and environments
+
+The interpreter completes name resolution and type analysis for the entire program before execution starts.
+Static errors therefore take priority even in functions or statements that execution never reaches.
+It then selects a function without parameters as the entry point.
+The default entry name is `main`, and its return type can be `int`, `bool`, or `void`.
+The earlier analysis commands still do not require an entry function.
+
+Operands evaluate from left to right.
+`&&` skips its right operand when the left operand is `false`.
+`||` skips its right operand when the left operand is `true`.
+Assignment evaluates its value without reading the previous target value, stores the result, and returns that result.
+Chained assignments evaluate the inner assignment before they store the outer result.
+
+Each block owns an environment containing its active local variables.
+Runtime lookup uses the symbol chosen by name resolution, so shadowing retains its lexical meaning.
+A declaration creates a slot without a value before its initializer runs.
+A read from a slot without a value produces a runtime error.
+Thus, `int x = x;` passes static analysis but fails during execution.
+
+Assignment can initialize a variable declared without an initializer.
+Block exit removes the local environment, including when a return or error ends the block.
+A return propagates through nested blocks and ends entry execution.
+A `void` entry can also end without an explicit return.
+Statements after an executed return do not run, but they still require valid static analysis.
+
+Unsupported calls and control-flow nodes produce errors only when execution reaches them.
+An unused helper function can contain those nodes if it passes static analysis.
+A skipped logical operand or a statement after a return does not trigger an unsupported-node error.
+This boundary preserves the separate phase 7 work on calls, frames, conditions, loops, and recursion.
+
+### API and command contract
+
+The planned API is `Value interpret(const Program&, const std::string& entry = "main")`.
+It will analyze the supplied program and execute the selected entry without parameters.
+The returned value will own its data and remain valid after the AST expires.
+The call will not change the AST or reuse caller-supplied analysis from another program.
+
+The planned `--run <file>` command will use `main` as its entry.
+It will print an integer in decimal or a boolean as `true` or `false`, followed by a newline.
+A `void` result will produce no output.
+Successful execution will return status `0`, including when the entry returns a nonzero integer.
+An error will return status `1`, with no standard output and a positioned diagnostic on standard error.
+
 ## Planned language scope
 
 The following language scope grows phase by phase (see [roadmap.md](roadmap.md)):

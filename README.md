@@ -65,6 +65,10 @@ The approved [type rules](docs/language.md#phase-5-type-rules) define operators,
 The analysis returns expression types and owns its name-resolution result without modifying the AST.
 The `--check` command analyzes the complete program and returns `0` without output when the analysis succeeds.
 
+Phase 6 starts with owned runtime values and guarded signed 64-bit arithmetic in a separate library.
+The approved [execution rules](docs/language.md#phase-6-execution-rules) define numeric errors, initialization behavior, entry selection, and the supported subset.
+AST execution and the `--run` command remain pending.
+
 ## Build and use
 
 From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
@@ -145,10 +149,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 119 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, and command behavior.
+The 125 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, runtime operations, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-All 119 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+The original 119 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -177,7 +181,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 3 | Parsing theory (First/Follow, bottom-up) | done |
 | 4 | Symbol table / scopes | done |
 | 5 | Type checking | done |
-| 6 | Tree-walk interpreter (stage A) | pending |
+| 6 | Tree-walk interpreter (stage A) | in progress |
 | 7 | Functions and control flow | pending |
 | 8 | Bytecode compiler | pending |
 | 9 | VM (stage B, primary target) | pending |

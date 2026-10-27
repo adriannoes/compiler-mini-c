@@ -296,6 +296,29 @@ Type analysis does not establish numeric representability, definite initializati
 It does not execute code, and its conservative return rules reject some valid programs with nonterminating loops.
 Execution and runtime error behavior remain in later roadmap phases.
 
+## Runtime values and interpreter design
+
+`src/runtime.hpp` defines `Value` as a variant of `std::monostate`, `std::int64_t`, and `bool`.
+The empty alternative represents `void`, and the integer and boolean alternatives remain distinct.
+Values own their data and contain no AST pointers.
+`RuntimeError` carries a source position and an English diagnostic.
+
+The `minic_runtime` library links to `minic_frontend`, while the front-end library remains independent of execution.
+Internal numeric helpers compare operand bounds before signed arithmetic.
+Decimal conversion accumulates an unsigned magnitude within the permitted limit before converting to a signed value.
+The negative-literal path permits the magnitude of the minimum signed integer without negating that integer in C++.
+These guards prevent C++ overflow and invalid signed division without compiler extensions.
+
+The approved [execution rules](language.md#phase-6-execution-rules) define the phase 6 subset and numeric behavior.
+The next increment will add `interpret(const Program&, const std::string&)` with internal type analysis.
+The interpreter will borrow the AST during that call and return an independent value.
+Block environments will use resolved symbol identifiers and an explicit state for variables without values.
+This costs environment storage but preserves lexical bindings without changing AST nodes.
+
+The final increment will add `--run <file>` and examples within the phase 6 subset.
+Calls and control flow will remain phase 7 work, with explicit errors for reached unsupported nodes.
+The existing analysis modes will not invoke the runtime library.
+
 ## Planned pipeline
 
 ```text

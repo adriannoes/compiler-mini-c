@@ -23,12 +23,21 @@ add_library(minic_frontend
 )
 target_include_directories(minic_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+add_library(minic_runtime src/runtime.cpp)
+target_link_libraries(minic_runtime PUBLIC minic_frontend)
+
 add_executable(minic src/main.cpp)
 target_link_libraries(minic PRIVATE minic_frontend)
 
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_runtime_tests tests/runtime_test.cpp)
+  target_link_libraries(minic_runtime_tests PRIVATE minic_runtime)
+  foreach(case IN ITEMS values literals arithmetic overflow division logic)
+    add_test(NAME runtime.${case} COMMAND minic_runtime_tests ${case})
+  endforeach()
+
   add_executable(minic_type_checker_tests tests/type_checker_test.cpp)
   target_link_libraries(minic_type_checker_tests PRIVATE minic_frontend)
   foreach(case IN ITEMS empty expression_types declarations assignments operators shadowing
