@@ -66,7 +66,7 @@ class VirtualMachine {
     if (function.parameter_count != 0) {
       throw RuntimeError(function.location, "The entry function \"" + entry + "\" must not have parameters.");
     }
-    frames_.push_back({index, 0, 0, std::vector<std::optional<Value>>(function.locals.size())});
+    enter(index, function.location);
     while (true) {
       const auto instruction = next();
       switch (instruction.opcode) {
@@ -120,8 +120,7 @@ class VirtualMachine {
           }
           break;
         }
-        case OpCode::Call:
-          throw RuntimeError(instruction.location, "Function calls are not available in this VM increment.");
+        case OpCode::Call: enter(instruction.operand, instruction.location); break;
         case OpCode::Return:
         case OpCode::ReturnVoid: {
           const auto result = finish(instruction.opcode == OpCode::Return);
@@ -138,6 +137,31 @@ class VirtualMachine {
   }
 
  private:
+  void enter(std::size_t index, SourceLocation location) {
+    if (index >= program_.functions.size()) {
+      invalid("The function index is outside the program.");
+    }
+    if (frames_.size() == limits_.max_call_depth) {
+      throw RuntimeError(location, "The call depth limit was reached.");
+    }
+    const auto& callee = program_.functions[index];
+    if (callee.parameter_count > callee.locals.size()) {
+      invalid("The function has insufficient parameter slots.");
+    }
+    const auto caller_base = frames_.empty() ? 0 : frames_.back().base;
+    if (values_.size() - caller_base < callee.parameter_count) {
+      invalid("The call has insufficient argument values.");
+    }
+    const auto base = values_.size() - callee.parameter_count;
+    Frame frame{index, 0, base, std::vector<std::optional<Value>>(callee.locals.size())};
+    for (std::size_t parameter = 0; parameter < callee.parameter_count; ++parameter) {
+      require_type(values_[base + parameter], callee.locals[parameter].type);
+      frame.locals[parameter] = values_[base + parameter];
+    }
+    frames_.push_back(std::move(frame));
+    values_.resize(base);
+  }
+
   const BytecodeFunction& function() const { return program_.functions[frames_.back().function]; }
 
   Instruction next() {

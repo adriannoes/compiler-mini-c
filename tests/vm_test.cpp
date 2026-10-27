@@ -1,10 +1,12 @@
 #include "bytecode_compiler.hpp"
+#include "interpreter.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "vm.hpp"
 
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <string_view>
 
 namespace {
@@ -164,6 +166,164 @@ void ownership() {
   require(std::get<std::int64_t>(result) == 42, "Expected the result to outlive temporary bytecode.");
 }
 
+void calls() {
+  integer("int add(int a, int b) { return a + b; } int main() { return 1 + add(2, add(3, 4)); }", 10);
+  integer("int main() { int x = f(); int f = 7; return x + f; } int f() { return 1; }", 8);
+  integer("void noop() {} int main() { noop(); return 2; }", 2);
+}
+
+void parameters() {
+  integer("int change(int a, int b) { a = 9; return b; } int main() { int x = 3; return change(x, x) + x; }", 6);
+  boolean("bool flip(bool b) { b = !b; return b; } bool main() { bool b = false; return flip(b) && !b; }", true);
+  integer("int f(int n) { { int n = 10; n = 20; } return n; } int main() { return f(3); }", 3);
+  integer("int pair(int a, int b) { return a * 10 + b; } "
+          "int main() { int x = 0; int r = pair(x = x + 1, x = x + 1); return r * 10 + x; }", 122);
+}
+
+void recursion() {
+  integer("int sum(int n) { int local = n * 10; if (n == 0) return local; "
+          "int child = sum(n - 1); return local + n + child; } int main() { return sum(3); }", 66);
+  integer("int factorial(int n) { if (n < 2) return 1; return n * factorial(n - 1); } "
+          "int main() { return factorial(6); }", 720);
+  boolean("bool even(int n) { if (n == 0) return true; return odd(n - 1); } "
+          "bool odd(int n) { if (n == 0) return false; return even(n - 1); } "
+          "bool main() { return even(10) && odd(9); }", true);
+}
+
+void call_returns() {
+  integer("int f() { while (true) { if (true) return 4; } return 0; } "
+          "int main() { int x = f(); x = x + 1; return x; }", 5);
+  integer("void f(int x) { while (true) { x = 99; return; } } int main() { int x = 1; f(x); return x; }", 1);
+  require(std::holds_alternative<std::monostate>(evaluate("void f() { return; } void main() { f(); }")),
+          "Expected an explicit void call result.");
+  integer("void f() { int x = 2; } int main() { int x = 1; f(); return x; }", 1);
+}
+
+void call_errors() {
+  error("int divide(int n) {\n  return 1 / n;\n} int main() { return divide(0); }", {2, 12}, "The divisor is zero.");
+  error("int f(int n) { int x; if (n == 0) {\n  return x; } x = n; return f(n - 1); } "
+        "int main() { return f(1); }", {2, 10}, "The variable \"x\" has no value.");
+  const auto program = compile("int bad() { return 1 / 0; } int good() { return 42; }");
+  try {
+    minic::execute_bytecode(program, "bad");
+    throw std::runtime_error("Expected a callee runtime error.");
+  } catch (const minic::RuntimeError&) {}
+  require(std::get<std::int64_t>(minic::execute_bytecode(program, "good")) == 42,
+          "Expected independent state after a failed execution.");
+}
+
+void call_depth() {
+  const std::string source = "int f() {\n  return f();\n} int main() { return f(); }";
+  error(source, {2, 10}, "The call depth limit was reached.", {1000, 3});
+  error(source, {2, 10}, "The call depth limit was reached.");
+  require(std::get<std::int64_t>(evaluate("int id(int n) { return n; } int main() { return id(id(id(3))); }",
+                                         "main", {100, 2})) == 3,
+          "Expected argument calls to return before the enclosing call starts.");
+  error("int take(int x) { return x; } int main() { int x;\n  return take(x); }", {2, 15},
+        "The variable \"x\" has no value.", {100, 1});
+}
+
+void shared_budget() {
+  error("void f() {} void main() { f(); f(); }", {1, 10}, "The execution step limit was reached.", {6, 2});
+  require(std::get<std::int64_t>(evaluate("void f() {} int main() { f(); f(); f(); return 42; }", "main", {100, 2})) == 42,
+          "Expected returns to free call-depth capacity.");
+}
+
+void deep_calls() {
+  const auto value = evaluate("int down(int n) { if (n == 0) return 0; return 1 + down(n - 1); } "
+                              "int main() { return down(5000); }", "main", {200000, 6000});
+  require(std::get<std::int64_t>(value) == 5000, "Expected deep VM calls without native recursion.");
+}
+
+struct Outcome {
+  std::optional<minic::Value> value;
+  minic::SourceLocation location;
+  std::string message;
+};
+
+template <class Run>
+Outcome capture(Run run) {
+  try {
+    return {run(), {}, {}};
+  } catch (const minic::RuntimeError& caught) {
+    return {std::nullopt, caught.location, caught.what()};
+  }
+}
+
+void compare(const minic::Program& program, const minic::BytecodeProgram& bytecode,
+             minic::ExecutionLimits limits = {}, const std::string& entry = "main") {
+  const auto expected = capture([&] { return minic::interpret(program, entry, limits); });
+  const auto actual = capture([&] { return minic::execute_bytecode(bytecode, entry, limits); });
+  require(actual.value == expected.value && actual.message == expected.message &&
+              actual.location.line == expected.location.line && actual.location.column == expected.location.column,
+          "VM and interpreter disagree at step budget " + std::to_string(limits.max_steps) +
+              " and call depth " + std::to_string(limits.max_call_depth) + ": " +
+              expected.message + " / " + actual.message);
+}
+
+void compare(std::string_view source) {
+  const auto program = minic::parse(minic::lex(source));
+  compare(program, minic::compile_bytecode(program));
+}
+
+void differential_values() {
+  for (const std::string source : {
+           "int main() { int x; int y = x = 7; return x * 10 + y; }",
+           "int main() { int x = 1; { x = x + 1; int x = 9; } return x; }",
+           "bool main() { bool x = false; true || (x = true); return !x; }",
+           "int main() { int i = 0; while ((i = i + 1) < 4) ; return i; }",
+           "void main() { while (true) { return; } 1 / 0; }",
+           "int main() { return -(0009223372036854775808); }",
+           "int id(int n) { return n; } int main() { return 100 + id(id(7)) * id(3); }",
+           "int pair(int a, int b) { return a * 10 + b; } int main() { int x = 0; return pair(x = 1, x = x + 1); }",
+           "void f() {} void main() { f(); f(); }",
+           "int fib(int n) { if (n < 2) return n; return fib(n - 1) + fib(n - 2); } int main() { return fib(10); }"}) {
+    compare(source);
+  }
+}
+
+void differential_errors() {
+  for (const std::string source : {
+           "", "void helper() {}", "int main(int n) { return n; }",
+           "int main() { int x = x; return x; }",
+           "int main() { return 9223372036854775808; }",
+           "int main() { return -9223372036854775809; }",
+           "int main() { return 9223372036854775807 + 1; }",
+           "int main() { return -9223372036854775808 - 1; }",
+           "int main() { return 9223372036854775807 * 2; }",
+           "int main() { return -(-9223372036854775808); }",
+           "int main() { return -9223372036854775808 / -1; }",
+           "int main() { return -9223372036854775808 % -1; }",
+           "int main() { return 1 % 0; }",
+           "bool f() { bool x; return x; } bool main() { return f(); }",
+           "int divide(int n) { return 1 / n; } int main() { return 7 + divide(0); }",
+           "int main() { int i = 0; while (i < 2) { int x; if (i == 0) x = 1; i = i + 1; x; } return 0; }"}) {
+    compare(source);
+  }
+}
+
+void differential_limits() {
+  for (const std::string source : {
+           "int main() { return 42; }",
+           "int main() { int x; return x = -1; }",
+           "bool main() { return true || (1 / 0 == 0); }",
+           "bool main() { return false && (1 / 0 == 0); }",
+           "int main() { if (true) { return 2; } else return 3; }",
+           "int main() { int i = 0; while (i < 3) { i = i + 1; } return i; }",
+           "void main() { while (true) ; }",
+           "void f() {} void main() { f(); f(); }",
+           "int f(int n) { if (n == 0) return 0; return 1 + f(n - 1); } int main() { return f(3); }",
+           "int id(int n) { return n; } int main() { return id(id(id(3))); }"}) {
+    const auto program = minic::parse(minic::lex(source));
+    const auto bytecode = minic::compile_bytecode(program);
+    for (std::size_t steps = 1; steps <= 80; ++steps) {
+      for (const std::size_t depth : {1, 2, 4}) {
+        compare(program, bytecode, {steps, depth});
+      }
+    }
+  }
+}
+
 void invalid_bytecode() {
   for (const auto opcode : {minic::OpCode::Pop, minic::OpCode::LoadConstant, minic::OpCode::LoadLocal,
                             minic::OpCode::Jump, static_cast<minic::OpCode>(999)}) {
@@ -182,6 +342,24 @@ void invalid_bytecode() {
     minic::execute_bytecode(program);
     throw std::runtime_error("Expected an invalid return type error.");
   } catch (const std::invalid_argument&) {}
+  for (const auto corrupt : {0, 1, 2}) {
+    auto called = compile("int f(int n) { return n; } int main() { return 9 + f(1); }");
+    if (corrupt == 0) {
+      for (auto& instruction : called.functions[1].code) {
+        if (instruction.opcode == minic::OpCode::Call) {
+          instruction.operand = 999;
+        }
+      }
+    } else if (corrupt == 1) {
+      called.functions[0].parameter_count = 2;
+    } else {
+      called.functions[0].code[0] = {minic::OpCode::Pop, 0, {1, 1}};
+    }
+    try {
+      minic::execute_bytecode(called);
+      throw std::runtime_error("Expected a guarded invalid call.");
+    } catch (const std::invalid_argument&) {}
+  }
 }
 
 }  // namespace
@@ -193,6 +371,10 @@ int main(int argc, char** argv) {
       {"conditionals", conditionals}, {"loops", loops}, {"returns", returns}, {"entry_selection", entry_selection},
       {"numeric_errors", numeric_errors}, {"step_limits", step_limits}, {"ownership", ownership},
       {"invalid_bytecode", invalid_bytecode},
+      {"calls", calls}, {"parameters", parameters}, {"recursion", recursion}, {"call_returns", call_returns},
+      {"call_errors", call_errors}, {"call_depth", call_depth}, {"shared_budget", shared_budget},
+      {"deep_calls", deep_calls}, {"differential_values", differential_values},
+      {"differential_errors", differential_errors}, {"differential_limits", differential_limits},
   };
   if (argc == 2) {
     for (const auto& test : cases) {

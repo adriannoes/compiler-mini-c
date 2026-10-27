@@ -330,14 +330,19 @@ Delivery uses three local increments:
 Increment 1 provides `execute_bytecode` in `minic_vm` for entry execution without internal calls.
 Fifteen test groups cover the core instructions, runtime diagnostics, source step counts, owned results, and guarded stack access.
 The shared `ExecutionLimits` definition moves to `runtime.hpp` without changing existing interpreter calls.
-Internal calls and final validation remain pending.
+
+Increment 2 adds explicit call frames, copied parameter values, direct and mutual recursion, and call-depth limits.
+Eleven more VM groups cover calls, return restoration, callee errors, shared limits, deep calls, and interpreter comparisons.
+The deep-call test reaches 5002 active frames without recursive C++ calls.
+Differential budget tests compare 2400 combinations of source programs, step limits, and call-depth limits.
+Command integration and final validation remain pending.
 
 Lookup terms: `virtual machine`, `stack machine`, `fetch-decode-execute`, `instruction dispatch`, `frame pointer`, `runtime error`
 
 - [x] VM core instructions and source step limits
-- [ ] Explicit function frames and call-depth limits
+- [x] Explicit function frames and call-depth limits
 - [ ] Execute the same examples as stages 6-7 on the VM
-- [ ] Differential tests: interpreter vs VM results where useful
+- [x] Differential tests: interpreter vs VM results where useful
 
 ## Phase 10: Local optimizations
 

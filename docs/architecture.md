@@ -497,7 +497,7 @@ The machine owns a vector of frames and a vector of temporary values for each ex
 A frame records a function index, instruction index, stack base, and optional values for each local slot.
 The function metadata and instructions remain in the caller bytecode, which execution reads without modification.
 The machine copies instructions before dispatch and keeps no frame reference across frame growth.
-This design will support recursive Mini-C calls without adding recursive C++ calls.
+This design supports recursive Mini-C calls without adding recursive C++ calls.
 
 The stack base separates caller temporaries from the current activation.
 Stack operations guard that boundary, instruction and operand indices have bounds guards, and arithmetic guards operand types.
@@ -510,9 +510,19 @@ Unary and binary operations use the same checked helpers as the interpreter.
 Conditional jumps pop their boolean, and absolute targets preserve compiler-generated short-circuit and loop paths.
 `STEP` alone charges the source budget, so synthetic instructions do not change the phase 7 limit contract.
 
-The first increment supports entry execution without internal calls and includes fifteen VM test groups.
-The tests cover operations, scopes, missing values, branches, loops, returns, entry rules, numeric errors, source steps, ownership, and invalid accesses.
-Calls, differential comparisons, command integration, and final sanitizer validation follow in the remaining increments.
+`CALL` uses the callee signature to locate argument values above the caller stack base.
+The machine checks depth after argument evaluation, copies parameters into new local slots, and then consumes the argument values.
+The new frame base preserves caller temporaries, including earlier arguments and pending binary operands.
+The caller instruction index already points after `CALL`, so ending the callee resumes the caller without another lookup.
+The machine ends each frame with an empty temporary range, then supplies a result only for a non-void return.
+No frame or value reference survives vector growth during call entry or return.
+
+Twenty-six VM groups cover operations, slots, branches, loops, calls, return restoration, numeric errors, limits, ownership, and guarded accesses.
+The deep-call test reaches 5002 active frames and returns through pending additions with a configured call-depth limit of 6000.
+Differential tests compare values and exact runtime messages and positions with the interpreter.
+The budget test compares ten programs at eighty step limits and three call-depth limits, for 2400 engine comparisons.
+It covers both completed runs and stopped runs, including loops, skipped operands, nested calls, and shared budgets.
+Command integration and final sanitizer validation follow in the last increment.
 
 ## Planned pipeline
 

@@ -78,8 +78,9 @@ The [bytecode contract](docs/architecture.md#bytecode-format-and-compilation) de
 Compilation covers the current language after static analysis.
 The `--bytecode` command prints instructions without executing them. The VM remains in phase 9.
 
-Phase 9 starts with `minic::execute_bytecode` for entries, local variables, operations, branches, loops, and returns.
-It shares numeric rules and source step limits with the interpreter. Internal calls and command integration remain in progress.
+Phase 9 provides `minic::execute_bytecode` for entries, local variables, operations, branches, loops, calls, and returns.
+It shares numeric rules and source step limits with the interpreter and uses explicit frames for recursion.
+Command integration remains in progress.
 The [VM rules](docs/language.md#phase-9-vm-rules) define the approved execution contract.
 
 ## Build and use
@@ -222,7 +223,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 237 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, interpretation, bytecode, VM execution, and commands.
+The 248 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, interpretation, bytecode, VM execution, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 The 222 tests from phase 8 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.

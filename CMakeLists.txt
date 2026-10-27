@@ -42,10 +42,13 @@ if(BUILD_TESTING)
   target_link_libraries(minic_vm_tests PRIVATE minic_vm)
   foreach(case IN ITEMS arithmetic booleans assignments scopes initialization evaluation_order
                         short_circuit conditionals loops returns entry_selection numeric_errors
-                        step_limits ownership invalid_bytecode)
+                        step_limits ownership invalid_bytecode calls parameters recursion call_returns
+                        call_errors call_depth shared_budget deep_calls differential_values
+                        differential_errors differential_limits)
     add_test(NAME vm.${case} COMMAND minic_vm_tests ${case})
   endforeach()
-  set_tests_properties(vm.step_limits PROPERTIES TIMEOUT 10)
+  set_tests_properties(vm.step_limits vm.call_depth vm.shared_budget vm.deep_calls PROPERTIES TIMEOUT 10)
+  set_tests_properties(vm.differential_limits PROPERTIES TIMEOUT 30)
 
   add_executable(minic_bytecode_compiler_tests tests/bytecode_compiler_test.cpp)
   target_link_libraries(minic_bytecode_compiler_tests PRIVATE minic_bytecode)

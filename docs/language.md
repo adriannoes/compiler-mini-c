@@ -631,7 +631,7 @@ The `--run` command still executes through the tree-walk interpreter and retains
 The approved VM executes the phase 8 instruction set without changing the language or bytecode format.
 The API is `Value execute_bytecode(const BytecodeProgram&, const std::string& entry = "main")`.
 The overload `execute_bytecode(program, entry, limits)` accepts the shared `ExecutionLimits` type.
-The first increment executes entries, expressions, local slots, branches, loops, and returns. Internal calls follow in the second increment.
+The VM executes entries, expressions, local slots, branches, loops, calls, and returns.
 
 The API accepts compiler-produced bytecode and performs no AST analysis during execution.
 The bytecode remains unchanged and supports repeated execution with independent runtime state.
@@ -646,14 +646,14 @@ An executed read without a value reports the original variable name and use posi
 
 The VM uses explicit frames and an iterative instruction loop instead of recursive C++ calls.
 Each frame records its function, next instruction, local values, and base within the value stack.
-Calls will copy arguments into separate parameter slots after argument evaluation and preserve the caller values below that base.
-Returns will end only the current activation and restore the caller stack before supplying a non-void result.
+Calls copy arguments into separate parameter slots after argument evaluation and preserve the caller values below that base.
+Returns end only the current activation and restore the caller stack before supplying a non-void result.
 Void functions produce no stack value, including on implicit fallthrough.
 
 Only `STEP` consumes a source step. The shared budget continues across calls and returns.
 The defaults remain 1000000 steps and 128 active calls, including the entry as depth one.
 Both limits must be positive. Invalid limits produce `std::invalid_argument` before entry selection.
-Step exhaustion identifies the next source node. Depth exhaustion will identify the called name after argument evaluation.
+Step exhaustion identifies the next source node. Depth exhaustion identifies the called name after argument evaluation.
 Indices, operand types, and stack access have guards that report malformed executed bytecode as `std::invalid_argument`.
 The API contract requires compiler-produced control flow, including `STEP` on execution cycles.
 
