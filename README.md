@@ -336,7 +336,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 10 | Local optimizations | done |
 | 11 | Optional language features | done |
 | 12 | LLVM literacy | done |
-| 13 | Wrap-up / portfolio polish | pending |
+| 13 | Wrap-up / portfolio polish | in progress |
 
 Phase 2 delivers syntax and AST output, and phase 3 records the related theory.
 Phase 4 adds name resolution without changing those syntax contracts.

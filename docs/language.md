@@ -44,6 +44,52 @@ Mini-C is a C subset chosen to stay close to a typical college compilers course.
 
 Specialist compiler engineering is outside the project scope.
 
+## Current grammar
+
+This grammar describes the parser after the array extension.
+Braces mean repetition, square brackets mean an optional part, and quoted text names a token spelling.
+These conventions form extended Backus-Naur form (EBNF), a compact notation for grammar rules.
+
+```ebnf
+program          = { function }, EOF ;
+function         = type, IDENTIFIER, "(", [ parameters ], ")", block ;
+type             = "int" | "bool" | "void" ;
+parameters       = parameter, { ",", parameter } ;
+parameter        = type, IDENTIFIER ;
+block            = "{", { declaration | statement }, "}" ;
+declaration      = type, IDENTIFIER, ( "[", INTEGER, "]"
+                 | [ "=", expression ] ), ";" ;
+statement        = block | if_statement | while_statement | return_statement
+                 | [ expression ], ";" ;
+if_statement     = "if", "(", expression, ")", statement, [ "else", statement ] ;
+while_statement  = "while", "(", expression, ")", statement ;
+return_statement = "return", [ expression ], ";" ;
+expression       = assignment ;
+assignment       = logical_or, [ "=", assignment ] ;
+logical_or       = logical_and, { "||", logical_and } ;
+logical_and      = equality, { "&&", equality } ;
+equality         = comparison, { ( "==" | "!=" ), comparison } ;
+comparison       = additive, { ( "<" | "<=" | ">" | ">=" ), additive } ;
+additive         = multiplicative, { ( "+" | "-" ), multiplicative } ;
+multiplicative   = unary, { ( "*" | "/" | "%" ), unary } ;
+unary            = ( "!" | "-" ), unary | primary ;
+primary          = INTEGER | "true" | "false"
+                 | IDENTIFIER, [ "(", [ arguments ], ")" | "[", expression, "]" ]
+                 | "(", expression, ")" ;
+arguments        = expression, { ",", expression } ;
+```
+
+An assignment target must parse as a name or indexed access after parentheses disappear from the tree.
+The parser rejects other target shapes at the assignment operator.
+An `else` belongs to the nearest preceding `if` without an `else`, unless braces select another attachment.
+Only named calls and named array accesses accept a suffix, and each primary accepts at most one suffix.
+
+Syntax permits `void` declarations and unrestricted decimal length text.
+Type analysis rejects variables and parameters of type `void`, invalid lengths, non-integer indices, and incompatible values.
+Array lengths range from 1 through 1024. Parameters and return values remain scalar.
+The [array rules](#phase-11-local-arrays) specify storage, bounds, and evaluation order.
+The phase sections below retain the decisions and limits introduced by each increment.
+
 ## Phase 1 scope
 
 The phase 1 agreement adds exactly 23 token types to the first lexer increment.
@@ -89,6 +135,7 @@ The lexer recognizes the following tokens:
 | `INTEGER` | `[0-9]+` |
 | `LEFT_PAREN`, `RIGHT_PAREN` | `(`, `)` |
 | `LEFT_BRACE`, `RIGHT_BRACE` | `{`, `}` |
+| `LEFT_BRACKET`, `RIGHT_BRACKET` | `[`, `]` |
 | `SEMICOLON` | `;` |
 | `COMMA` | `,` |
 | `ASSIGN` | `=` |
@@ -151,33 +198,8 @@ The following grammar defines the approved phase 2 scope.
 Braces mean repetition, and brackets mean an optional part.
 Quoted text names a token spelling.
 
-```ebnf
-program          = { function }, EOF ;
-function         = type, IDENTIFIER, "(", [ parameters ], ")", block ;
-type             = "int" | "bool" | "void" ;
-parameters       = parameter, { ",", parameter } ;
-parameter        = type, IDENTIFIER ;
-block            = "{", { declaration | statement }, "}" ;
-declaration      = type, IDENTIFIER, [ "=", expression ], ";" ;
-statement        = block | if_statement | while_statement | return_statement
-                 | [ expression ], ";" ;
-if_statement     = "if", "(", expression, ")", statement, [ "else", statement ] ;
-while_statement  = "while", "(", expression, ")", statement ;
-return_statement = "return", [ expression ], ";" ;
-expression       = assignment ;
-assignment       = logical_or, [ "=", assignment ] ;
-logical_or       = logical_and, { "||", logical_and } ;
-logical_and      = equality, { "&&", equality } ;
-equality         = comparison, { ( "==" | "!=" ), comparison } ;
-comparison       = additive, { ( "<" | "<=" | ">" | ">=" ), additive } ;
-additive         = multiplicative, { ( "+" | "-" ), multiplicative } ;
-multiplicative   = unary, { ( "*" | "/" | "%" ), unary } ;
-unary            = ( "!" | "-" ), unary | primary ;
-primary          = INTEGER | "true" | "false"
-                 | IDENTIFIER, [ "(", [ arguments ], ")" ]
-                 | "(", expression, ")" ;
-arguments        = expression, { ",", expression } ;
-```
+The [current grammar](#current-grammar) consolidates this syntax with the phase 11 array extension.
+Phase 2 supports scalar declarations, names, and calls. Phase 11 adds bracketed lengths and indexed accesses.
 
 A program contains only function definitions at file scope.
 An empty program is valid syntax, and the parser does not require a `main` function.
@@ -779,11 +801,12 @@ The laboratory uses C integer semantics rather than the Mini-C signed 64-bit rul
 Clang remains a laboratory tool rather than a dependency of the Mini-C executable.
 An LLVM backend and additional commands remain outside this phase.
 
-## Planned language scope
+## Language summary
 
-The following language scope grows phase by phase (see [roadmap.md](roadmap.md)):
+The completed scope follows the [current grammar](#current-grammar) and the semantic rules above:
 
-- Types: `int`, `bool`, `void` (extend later if needed)
+- Scalar types: `int`, `bool`, and `void` for function results
+- Local arrays: `int` or `bool` elements with fixed lengths
 - Statements: declarations, assignment, `if`/`else`, `while`, `return`, blocks
 - Expressions: arithmetic, comparisons, logical ops, calls
 - Functions with parameters
@@ -793,12 +816,12 @@ The original phase 1 vocabulary contains 33 token types, including identifiers, 
 Phase 11 adds the bracket tokens for a total of 35.
 The lexer recognizes token boundaries but does not check statement structure or types.
 
-## Out of scope (start)
+## Excluded features
 
-Preprocessor, pointers, structs, `goto`, unions.
-
-After stage B works, reconsider these limits in phase 11.
-Record each scope change here before implementation.
+The language excludes a preprocessor, pointers, structs, unions, `goto`, strings, floating-point values, and dynamic allocation.
+It also excludes global variables, function prototypes, multidimensional arrays, array initializers, and whole-array values.
+The compiler exposes no LLVM backend or native-code command.
+The independent C/LLVM laboratory retains its [phase 12 study boundary](#phase-12-llvm-study-boundary).
 
 ## Mindset
 

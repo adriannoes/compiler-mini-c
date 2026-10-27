@@ -451,8 +451,19 @@ Lookup terms: `LLVM IR`, `SSA`, `static single assignment`, `basic block`, `phi 
 
 ## Phase 13: Wrap-up
 
+Status: in progress. This phase consolidates the completed implementation and its portfolio evidence.
+Delivery uses three local increments:
+
+1. Consolidate current grammar, the complete VM instruction set, execution limits, and build instructions.
+2. Record implemented, studied, and excluded curriculum topics with links to project evidence.
+3. Complete the README, check the example gallery, and record final documentation and regression checks.
+
+Increment 1 adds the current grammar and all 29 VM opcodes to the final reference sections.
+The current 398-test baseline and four LLVM laboratory checks pass before this phase begins.
+The phase changes documentation rather than compiler behavior, examples, commands, or dependencies.
+
 Lookup terms: `BNF`, `EBNF`, `compiler architecture`, `front end`, `back end`, `middle end`
 
-- [ ] Final notes in [architecture.md](architecture.md): BNF, ISA, limits, how to run tests
+- [x] Final notes in [architecture.md](architecture.md): BNF, ISA, limits, how to run tests
 - [ ] Update [curriculum-alignment.md](curriculum-alignment.md) with what was actually covered
 - [ ] Portfolio polish: README accuracy, example gallery, clear "what I built / what I studied"

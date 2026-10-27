@@ -23,6 +23,13 @@ related:
 
 # Architecture
 
+## Reference map
+
+The [current grammar](language.md#current-grammar) defines parser syntax, including local arrays.
+The [instruction table](#bytecode-format-and-compilation) lists the complete VM instruction set.
+The [execution boundaries](#execution-boundaries) collect numeric, storage, and resource limits.
+The [build and validation commands](#build-and-validation) reproduce the compiler checks and the separate LLVM laboratory.
+
 ## Current implementation
 
 The command reads a source file and passes its text to `minic::lex`.
@@ -83,7 +90,8 @@ For `===`, the scanner emits `EQUAL_EQUAL` and then `ASSIGN`.
 For `=/**/=`, the comment separates two `ASSIGN` tokens.
 Token recognition establishes boundaries, but later stages determine syntax, operator precedence, and types.
 
-The [lexer example](../examples/lexer.mc) contains every token type.
+The [lexer example](../examples/lexer.mc) contains all 33 phase 1 token types.
+The [array example](../examples/arrays.mc) adds both bracket types for the current total of 35.
 The command test compares its entire output with [tests/lexer.tokens](../tests/lexer.tokens).
 Unit tests also cover operators at the end of input, shared prefixes, division, and comments without nesting.
 The lexer and parser phases are complete within their agreed scopes.
@@ -102,12 +110,12 @@ This design costs allocations and string copies but does not require shared owne
 Adding a node also requires a printer overload, which keeps tree output consistent with the C++ node definitions.
 
 `Program` owns function definitions by value, and each function owns its body block by value.
-Expression variants represent integers, booleans, names, unary operations, binary operations, assignments, and named calls.
+Expression variants represent integers, booleans, names, unary operations, binary operations, assignments, named calls, and indexed accesses.
 Statement variants represent blocks, returns, declarations, expression statements, empty statements, conditionals, and loops.
 Each function also owns its ordered parameters by value.
 Optional return values, initializers, and else branches use a null pointer.
 All required child pointers are non-null in parser results.
-The complete syntax contract lives in the [approved grammar](language.md#phase-2-grammar).
+The complete syntax contract lives in the [current grammar](language.md#current-grammar).
 
 An expression location identifies its literal, name, or operator token.
 A block location identifies its opening brace, and a return, conditional, or loop location identifies its keyword.
@@ -328,7 +336,8 @@ This costs environment storage but preserves lexical bindings without changing A
 The interpreter owns its `TypeAnalysis` during execution and indexes variable and parameter declarations by symbol identifier.
 It uses the recorded bindings for reads and assignments without another search by source name.
 Each block creates an environment, and a scope guard ends its lifetime on normal exit, return, or error.
-Variable slots use `std::optional<Value>` so a missing value remains distinct from `void`.
+Scalar slots use `std::optional<Value>` so a missing value remains distinct from `void`.
+Each environment entry owns a `StorageSlot`, with scalar or array storage selected by its declaration.
 Insertion precedes initializer evaluation, and assignment does not read the previous target value.
 
 Statement execution returns `std::optional<Value>` as a control signal.
@@ -426,7 +435,7 @@ The `--bytecode` command prints the complete disassembly after compilation succe
 `BytecodeProgram` owns functions in source order.
 Each function owns its name, return type, source position, local metadata, constants, and instruction vector.
 The first local slots hold parameters in declaration order. Later slots identify distinct local declarations, including shadowed names.
-Each activation will have its own slots. Lexical bindings select slot indices during compilation, without runtime name searches.
+Each activation has its own slots. Lexical bindings select slot indices during compilation, without runtime name searches.
 This reserves space for every declaration in a function but avoids slot reuse and scope instructions.
 
 Constants contain booleans or an `IntegerConstant` with owned decimal digits and a negative flag.
@@ -435,7 +444,8 @@ Instructions contain an `OpCode`, one index operand where applicable, and an own
 Jump operands are absolute instruction indices within the current function. Call operands are function indices within the program.
 The format uses C++ records in memory. It defines no packed encoding, file serialization, or compatibility version.
 
-The instruction contract defines these stack effects:
+The instruction set architecture (ISA) defines 29 opcodes, which identify the VM operations.
+The table groups related opcodes and covers the complete set from [bytecode.hpp](../src/bytecode.hpp):
 
 | Instruction | Operand | Stack effect and behavior |
 |-------------|---------|---------------------------|
@@ -444,18 +454,21 @@ The instruction contract defines these stack effects:
 | `LOAD_LOCAL` | Local index | Push a copy, or report a read without a value |
 | `STORE_LOCAL` | Local index | Copy the top value into the slot and retain the top value |
 | `RESET_LOCAL` | Local index | Clear the slot before each declaration execution |
+| `CHECK_INDEX` | Array local index | Check the top index before the assignment value and retain the index |
+| `LOAD_ELEMENT` | Array local index | Pop the index and push the element, with bounds and missing-value checks |
+| `STORE_ELEMENT` | Array local index | Pop the value and index, store the value, and push the value |
 | `POP` | None | Discard the top value |
 | `NEGATE`, `NOT` | None | Replace one operand with its unary result |
 | `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `REMAINDER` | None | Pop right and left operands, then push the numeric result |
 | `EQUAL`, `NOT_EQUAL`, `LESS`, `LESS_EQUAL`, `GREATER`, `GREATER_EQUAL` | None | Pop right and left operands, then push the boolean result |
 | `JUMP` | Instruction index | Continue at the target |
 | `JUMP_IF_FALSE`, `JUMP_IF_TRUE` | Instruction index | Pop a boolean and jump when it matches the condition |
-| `CALL` | Function index | Consume arguments in parameter order and push a result only for a non-void function |
+| `CALL` | Function index | Consume arguments in parameter order. Callee return supplies a result only for a non-void function |
 | `RETURN` | None | End the current function with its top value |
 | `RETURN_VOID` | None | End the current function without a value |
 | `UNREACHABLE` | None | Identify an internal control-flow failure if execution reaches it |
 
-Instruction positions preserve operators, name uses, calls, and statement locations for future diagnostics.
+Instruction positions preserve operators, name uses, calls, and statement locations for runtime diagnostics.
 Separate `STEP` instructions preserve source-level accounting even when lowering requires several stack operations.
 Synthetic jumps, constants, stores, and returns consume no extra source steps.
 The compiler places loop-condition steps at the backward jump target and places skipped expression steps inside their selected paths.
@@ -499,7 +512,7 @@ It links to `minic_bytecode` and `minic_runtime` and shares the existing numeric
 The public API accepts a selected entry and optional positive execution limits, without performing another static analysis.
 
 The machine owns a vector of frames and a vector of temporary values for each execution.
-A frame records a function index, instruction index, stack base, and optional values for each local slot.
+A frame records a function index, instruction index, stack base, and owned `StorageSlot` entries for local values and elements.
 The function metadata and instructions remain in the caller bytecode, which execution reads without modification.
 The machine copies instructions before dispatch and keeps no frame reference across frame growth.
 This design supports recursive Mini-C calls without adding recursive C++ calls.
@@ -534,12 +547,12 @@ Temporary entries preserve the source fixtures for control flow and mutual recur
 Thirty-one VM command tests reuse the interpreter scenarios with a distinct temporary file path and the `--run-vm` flag.
 They compare exact output, diagnostics, and exit codes, including default step and depth failures.
 The command compiles before execution and prints only the completed result through the existing value formatter.
-The complete suite contains 280 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+The phase 9 suite contains 280 tests. All pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
 The prose scan reports no findings. The build commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
 
 Explicit VM calls use heap-owned frame and value vectors. Source parsing and AST compilation retain their existing native-stack limits.
 The step and depth limits constrain compiler-produced execution, with `STEP` marking the source-level budget.
-The format still defines no binary loader, optimizer, or compatibility version.
+The format defines no binary loader or compatibility version. The separate optimizer transforms its owned records in memory.
 
 ## Local bytecode optimization
 
@@ -662,7 +675,7 @@ The separate laboratory generates LLVM IR at `-O0` and `-O1`, then compiles both
 Its four native checks exercise five bounded cases each and preserve the existing 398 compiler tests.
 The [annotated IR](theory-llvm.md#read-the-o0-ir) connects stack storage, control-flow blocks, calls, and SSA values to concrete generated instructions.
 
-## Planned pipeline
+## Current pipeline
 
 ```text
 source (.mc)
@@ -694,12 +707,46 @@ Local optimizations introduce program transformations without a full data-flow f
 LLVM study provides vocabulary and small experiments for technical discussions.
 The main deliverable remains the bytecode virtual machine.
 
-## Growing this doc
+## Execution boundaries
 
-As phases land, add:
+| Surface | Current contract |
+|---------|------------------|
+| Integer values | Signed 64-bit values with positioned range, overflow, and zero-divisor errors |
+| Scalar initialization | A variable has no value until its initializer or an assignment completes |
+| Array lengths | Decimal literals from 1 through 1024, checked by type analysis |
+| Array access | Integer indices from zero through length minus one, with one initialization state per element |
+| Array lifetime | Independent storage per activation. Each executed declaration resets every element |
+| Evaluation order | Left before right. Indexed assignment checks and saves its index before evaluating the assigned value |
+| Source steps | Default `max_steps = 1000000`, shared across active calls and charged only on executed source entries |
+| Call depth | Default `max_call_depth = 128`, including the entry frame |
+| Limit configuration | Positive API limits through `ExecutionLimits`, with no CLI configuration flags |
+| Entry | The CLI executes parameterless `main`. APIs permit another entry name |
+| CLI result | Completed non-void results print with a newline. Success exits with status 0, independently of the Mini-C value |
+| Bytecode | Owned records for compiler-produced control flow, with no binary serialization or arbitrary-program verification |
+| Deep source trees | Parsing, analysis, compilation, and interpreter evaluation still use the native C++ stack |
+| VM recursion | Explicit frames avoid recursive C++ calls, while memory use still grows with active frames and local storage |
 
-- BNF / grammar sketch
-- AST node overview
-- Bytecode ISA table
-- Optimization pass list
-- Known limits
+Execution budgets do not bound source file size, parser nesting, or total memory allocation.
+A large configured interpreter depth can exhaust the native stack. The program is an educational compiler rather than an untrusted-code sandbox.
+The [language contract](language.md) specifies accepted syntax and semantics in detail.
+
+## Build and validation
+
+From the repository root, configure the C++17 project with CMake 3.20 or later:
+
+```bash
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+CTest contains 398 tests for stages, execution engines, examples, source positions, diagnostics, and command exit codes.
+The [tooling reference](tech-stack.md#sanitizer-validation) records the separate sanitizer build and its phase 11 baseline.
+With Clang available, operate the independent C/LLVM laboratory from the repository root:
+
+```bash
+cmake -P tests/llvm_lab.cmake
+```
+
+The laboratory checks four native executions, with five bounded cases each, exact output, and exit-status checks.
+It adds no Clang requirement to the Mini-C build or its CTest suite.
