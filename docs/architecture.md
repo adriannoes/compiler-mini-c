@@ -310,14 +310,37 @@ The negative-literal path permits the magnitude of the minimum signed integer wi
 These guards prevent C++ overflow and invalid signed division without compiler extensions.
 
 The approved [execution rules](language.md#phase-6-execution-rules) define the phase 6 subset and numeric behavior.
-The next increment will add `interpret(const Program&, const std::string&)` with internal type analysis.
-The interpreter will borrow the AST during that call and return an independent value.
-Block environments will use resolved symbol identifiers and an explicit state for variables without values.
+`interpret(const Program&, const std::string&)` performs internal type analysis before selecting its entry.
+The interpreter borrows the AST during that call and returns an independent value.
+Block environments use resolved symbol identifiers and an explicit state for variables without values.
 This costs environment storage but preserves lexical bindings without changing AST nodes.
+
+The interpreter owns its `TypeAnalysis` during execution and builds an index from variable declarations to symbol identifiers.
+It uses the recorded bindings for reads and assignments without another search by source name.
+Each block creates an environment, and a scope guard ends its lifetime on normal exit, return, or error.
+Variable slots use `std::optional<Value>` so a missing value remains distinct from `void`.
+Insertion precedes initializer evaluation, and assignment does not read the previous target value.
+
+Statement execution returns `std::optional<Value>` as a control signal.
+`std::nullopt` continues execution, while an engaged value propagates a return through nested blocks.
+An engaged `std::monostate` ends a `void` entry, unlike fallthrough without a return.
+Expressions evaluate their left operand before the right operand, and logical operators can skip the right operand.
+Reached calls and control-flow nodes throw `RuntimeError` instead of starting phase 7 behavior.
+
+The public call accepts temporary programs because its returned value contains no AST references.
+Repeated calls create fresh analysis and environment state without changing the source tree.
+No interpreter instance or environment escapes the call.
 
 The final increment will add `--run <file>` and examples within the phase 6 subset.
 Calls and control flow will remain phase 7 work, with explicit errors for reached unsupported nodes.
 The existing analysis modes will not invoke the runtime library.
+
+## Interpreter learning note
+
+A lexical binding identifies a declaration, while an environment stores the value for its active execution.
+Separate symbol identifiers preserve shadowing even when a declaration appears after an earlier use of an outer variable.
+Explicit missing-value state reports uninitialized reads without changing static name or type analysis.
+Return propagation and block cleanup define execution order without requiring function-call frames in phase 6.
 
 ## Planned pipeline
 

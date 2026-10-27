@@ -435,7 +435,7 @@ An empty program also succeeds because the checker does not require `main`.
 The phase 6 interpreter evaluates expressions, declarations, assignments, blocks, empty statements, and returns.
 Function calls, `if`, and `while` remain in phase 7.
 Reaching an unsupported node produces a runtime error.
-The value library is available, but AST execution and the command remain pending.
+The value library and `interpret` API are available. The execution command remains pending.
 
 ### Values and numeric limits
 
@@ -490,10 +490,10 @@ This boundary preserves the separate phase 7 work on calls, frames, conditions, 
 
 ### API and command contract
 
-The planned API is `Value interpret(const Program&, const std::string& entry = "main")`.
-It will analyze the supplied program and execute the selected entry without parameters.
-The returned value will own its data and remain valid after the AST expires.
-The call will not change the AST or reuse caller-supplied analysis from another program.
+The API is `Value interpret(const Program&, const std::string& entry = "main")`.
+It analyzes the supplied program and executes the selected entry without parameters.
+The returned value owns its data and remains valid after the AST expires.
+The call does not change the AST or reuse caller-supplied analysis from another program.
 
 The planned `--run <file>` command will use `main` as its entry.
 It will print an integer in decimal or a boolean as `true` or `false`, followed by a newline.

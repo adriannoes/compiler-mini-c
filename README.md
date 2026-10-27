@@ -49,7 +49,7 @@ The `--ast` command prints the tree after lexing and parsing succeed.
 The parser supports expressions, functions with parameters, named calls, local declarations, blocks, and return statements.
 It also supports `if`/`else` and `while`, including bodies without braces.
 Phase 2 is complete within the [approved grammar](docs/language.md#phase-2-grammar).
-The compiler does not execute programs.
+The token and AST commands do not execute programs.
 See [docs/language.md](docs/language.md) for lexical rules, grammar, precedence, and accepted limits.
 
 Phase 3 study notes include worked FIRST/FOLLOW sets, LL(1) decisions, and a shift/reduce trace.
@@ -65,9 +65,10 @@ The approved [type rules](docs/language.md#phase-5-type-rules) define operators,
 The analysis returns expression types and owns its name-resolution result without modifying the AST.
 The `--check` command analyzes the complete program and returns `0` without output when the analysis succeeds.
 
-Phase 6 starts with owned runtime values and guarded signed 64-bit arithmetic in a separate library.
+Phase 6 provides `minic::interpret`, owned runtime values, and guarded signed 64-bit arithmetic in a separate library.
 The approved [execution rules](docs/language.md#phase-6-execution-rules) define numeric errors, initialization behavior, entry selection, and the supported subset.
-AST execution and the `--run` command remain pending.
+The API executes the supported subset after static analysis and returns a value that does not borrow the AST.
+The `--run` command remains pending.
 
 ## Build and use
 
@@ -149,7 +150,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 125 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, runtime operations, and commands.
+The 141 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 The original 119 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.

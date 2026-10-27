@@ -23,7 +23,7 @@ add_library(minic_frontend
 )
 target_include_directories(minic_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-add_library(minic_runtime src/runtime.cpp)
+add_library(minic_runtime src/runtime.cpp src/interpreter.cpp)
 target_link_libraries(minic_runtime PUBLIC minic_frontend)
 
 add_executable(minic src/main.cpp)
@@ -32,6 +32,14 @@ target_link_libraries(minic PRIVATE minic_frontend)
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_interpreter_tests tests/interpreter_test.cpp)
+  target_link_libraries(minic_interpreter_tests PRIVATE minic_runtime)
+  foreach(case IN ITEMS arithmetic booleans assignments scopes initialization evaluation_order
+                        short_circuit returns void_returns entry_selection numeric_limits
+                        numeric_errors unsupported skipped_nodes static_priority ownership)
+    add_test(NAME interpreter.${case} COMMAND minic_interpreter_tests ${case})
+  endforeach()
+
   add_executable(minic_runtime_tests tests/runtime_test.cpp)
   target_link_libraries(minic_runtime_tests PRIVATE minic_runtime)
   foreach(case IN ITEMS values literals arithmetic overflow division logic)
