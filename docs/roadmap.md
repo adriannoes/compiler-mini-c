@@ -461,9 +461,11 @@ Delivery uses three local increments:
 Increment 1 adds the current grammar and all 29 VM opcodes to the final reference sections.
 The current 398-test baseline and four LLVM laboratory checks pass before this phase begins.
 The phase changes documentation rather than compiler behavior, examples, commands, or dependencies.
+Increment 2 records implemented topics, completed study exercises, and excluded capabilities with local evidence links.
+It also refreshes the cited Stanford, MIT Spring 2025, and Harvard Fall 2019 comparisons against their official pages.
 
 Lookup terms: `BNF`, `EBNF`, `compiler architecture`, `front end`, `back end`, `middle end`
 
 - [x] Final notes in [architecture.md](architecture.md): BNF, ISA, limits, how to run tests
-- [ ] Update [curriculum-alignment.md](curriculum-alignment.md) with what was actually covered
+- [x] Update [curriculum-alignment.md](curriculum-alignment.md) with what was actually covered
 - [ ] Portfolio polish: README accuracy, example gallery, clear "what I built / what I studied"
