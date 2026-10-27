@@ -596,7 +596,7 @@ With `--run`, these examples print `720` and `55`, respectively, and return proc
 ## Phase 8 bytecode rules
 
 The approved scope compiles the existing language to bytecode without adding syntax or executing the result.
-The planned API is `BytecodeProgram compile_bytecode(const Program&)`.
+The API is `BytecodeProgram compile_bytecode(const Program&)`.
 It performs complete name and type analysis once before generating instructions for all functions.
 Like `--check`, compilation accepts an empty program and does not require `main` or an entry signature.
 The result owns its data and remains valid after the AST expires.

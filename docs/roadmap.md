@@ -297,12 +297,15 @@ Delivery uses three local increments:
 Increment 1 provides the format and printer in `minic_bytecode`, with three test groups.
 The bytecode owns its strings and stores source positions by value.
 The instruction contract defines stack effects without implementing a VM.
-Compilation and command integration remain pending.
+Increment 2 provides `compile_bytecode` for the complete existing AST after static analysis.
+Seventeen compiler groups cover expressions, lexical slots, jumps, recursion, numeric text, source steps, errors, and ownership.
+The tests also analyze stack types across branch merges and loops without implementing execution.
+Command integration and final validation remain pending.
 
 Lookup terms: `intermediate representation`, `IR`, `three-address code`, `bytecode`, `instruction set`, `constant pool`, `jump`, `branch`, `label`, `disassembler`, `code generation`
 
 - [x] Define a small instruction set
-- [ ] Compile AST → bytecode chunk
+- [x] Compile AST → bytecode chunk
 - [x] Disassembler for debugging
 - [ ] Tests that compilation succeeds for fixture programs
 

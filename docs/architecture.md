@@ -413,8 +413,8 @@ The default call-depth limit passes the recursive error cases under both sanitiz
 
 Bytecode is an instruction sequence for the planned stack VM.
 The `minic_bytecode` library owns its format and deterministic printer independently of the interpreter.
-The first phase 8 increment provides `BytecodeProgram`, its records, and `print_bytecode`.
-Compilation and command integration follow in the remaining increments.
+The library provides `BytecodeProgram`, its records, `compile_bytecode`, and `print_bytecode`.
+Command integration remains in the final increment.
 
 `BytecodeProgram` owns functions in source order.
 Each function owns its name, return type, source position, local metadata, constants, and instruction vector.
@@ -423,7 +423,7 @@ Each activation will have its own slots. Lexical bindings select slot indices du
 This reserves space for every declaration in a function but avoids slot reuse and scope instructions.
 
 Constants contain booleans or an `IntegerConstant` with owned decimal digits and a negative flag.
-Compilation will preserve digits and defer integer conversion to execution, including literals in skipped code and the minimum signed integer.
+Compilation preserves digits and defers integer conversion to execution, including literals in skipped code and the minimum signed integer.
 Instructions contain an `OpCode`, one index operand where applicable, and an owned `SourceLocation` value.
 Jump operands are absolute instruction indices within the current function. Call operands are function indices within the program.
 The format uses C++ records in memory. It defines no packed encoding, file serialization, or compatibility version.
@@ -451,7 +451,25 @@ The instruction contract defines these stack effects:
 Instruction positions preserve operators, name uses, calls, and statement locations for future diagnostics.
 Separate `STEP` instructions preserve source-level accounting even when lowering requires several stack operations.
 Synthetic jumps, constants, stores, and returns consume no extra source steps.
-The compiler will place loop-condition steps after the backward jump target and place skipped expression steps inside their selected paths.
+The compiler places loop-condition steps at the backward jump target and places skipped expression steps inside their selected paths.
+
+`compile_bytecode` analyzes names and types once before generating code.
+It preassigns function indices for forward and recursive calls, then lowers each body in source order.
+Parameters occupy the first slots, and declarations add slots as the compiler visits them.
+All declarations and uses map through the static symbol identifiers. The compiler never chooses a slot from its text name.
+Compilation retains unreachable statements and performs no constant folding or arithmetic evaluation.
+
+Every expression leaves one stack value except a `void` call, which leaves none.
+Expression statements discard non-void values. Initializers store and discard their value, while assignments retain it for surrounding expressions.
+Conditional jumps consume their boolean operand. A skipped logical operand uses a synthetic constant to produce the short-circuit result.
+Arguments enter the stack from left to right before `CALL` consumes them using the callee signature.
+`RETURN` consumes a result, and `RETURN_VOID` handles explicit returns and implicit void fallthrough.
+Each non-void function ends with `UNREACHABLE` as an internal guard, which the existing conservative return analysis makes unreachable.
+
+Seventeen compiler test groups inspect bindings, constants, jumps, calls, ownership, static errors, and source steps.
+An independent test helper traverses generated control flow with abstract stack types.
+It checks operand indices, branch merges, stack underflow, call signatures, and return types without executing Mini-C values.
+The tests cover both paths of each conditional jump and the backward edges of loops.
 
 The printer numbers functions, constants, locals, and instructions from zero and includes each instruction position.
 It preserves integer digits, prints booleans as `true` or `false`, and uses quoted names.

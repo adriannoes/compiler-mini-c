@@ -73,9 +73,9 @@ Phase 7 adds `if`/`else`, `while`, and a configurable step budget to execution.
 Function calls use isolated frames and copied parameters, including direct and mutual recursion.
 The [phase 7 rules](docs/language.md#phase-7-execution-rules) define these behaviors and the configurable execution limits.
 
-Phase 8 starts with owned bytecode records and the `minic::print_bytecode` disassembler, which prints instructions for inspection.
+Phase 8 provides owned bytecode records, `minic::compile_bytecode`, and the `minic::print_bytecode` disassembler, which prints instructions for inspection.
 The [bytecode contract](docs/architecture.md#bytecode-format-and-compilation) defines a stack instruction set with source positions and explicit step markers.
-Compilation and command integration remain in progress. The VM remains in phase 9.
+Compilation covers the current language after static analysis. Command integration remains in progress, and the VM remains in phase 9.
 
 ## Build and use
 
@@ -194,7 +194,7 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 188 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, bytecode records, and commands.
+The 205 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, bytecode compilation, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
 The 185 tests from phase 7 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
