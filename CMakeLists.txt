@@ -32,12 +32,23 @@ target_link_libraries(minic_runtime PUBLIC minic_frontend)
 add_library(minic_vm src/vm.cpp)
 target_link_libraries(minic_vm PUBLIC minic_bytecode minic_runtime)
 
+add_library(minic_optimizer src/bytecode_optimizer.cpp)
+target_link_libraries(minic_optimizer PUBLIC minic_bytecode minic_runtime)
+
 add_executable(minic src/main.cpp)
 target_link_libraries(minic PRIVATE minic_vm)
 
 include(CTest)
 
 if(BUILD_TESTING)
+  add_executable(minic_optimizer_tests tests/optimizer_test.cpp)
+  target_link_libraries(minic_optimizer_tests PRIVATE minic_optimizer minic_vm)
+  foreach(case IN ITEMS empty integer_folding boolean_folding numeric_guards step_markers
+                        block_boundaries side_effects branch_targets ownership differential_limits)
+    add_test(NAME optimization.${case} COMMAND minic_optimizer_tests ${case})
+  endforeach()
+  set_tests_properties(optimization.differential_limits PROPERTIES TIMEOUT 30)
+
   add_executable(minic_vm_tests tests/vm_test.cpp)
   target_link_libraries(minic_vm_tests PRIVATE minic_vm)
   foreach(case IN ITEMS arithmetic booleans assignments scopes initialization evaluation_order

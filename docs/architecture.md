@@ -539,6 +539,36 @@ Explicit VM calls use heap-owned frame and value vectors. Source parsing and AST
 The step and depth limits constrain compiler-produced execution, with `STEP` marking the source-level budget.
 The format still defines no binary loader, optimizer, or compatibility version.
 
+## Local bytecode optimization
+
+The `minic_optimizer` library links to `minic_bytecode` and `minic_runtime`.
+`optimize_bytecode` copies the input and transforms each function independently.
+It preserves function order, signatures, locals, and source metadata. It adds no external dependency.
+The first increment provides local constant folding. Control-flow cleanup and command integration follow in later increments.
+
+A basic block is an instruction region with one entry.
+The optimizer marks function entry, jump targets, and instructions after jumps or returns as block entries.
+It tracks a suffix of known constant values and their producing instructions inside each block.
+`STEP` preserves that tracking without changing the abstract value stack.
+Any other instruction that is not a constant load or foldable operation ends the known suffix.
+Block entries also end tracking, so branch merges cannot borrow values from one predecessor.
+
+Successful unary and binary evaluations replace their producer loads and operation with one constant load.
+The replacement occupies the operation position, while every interleaved `STEP` remains in place and in order.
+The evaluator uses the same guarded numeric helpers as execution. A runtime error cancels that candidate without changing its original operations.
+This preserves literal range errors, arithmetic errors, and limit failures during execution.
+
+The pass marks removed instructions, copies the survivors, and maps old instruction indices to new indices.
+Removed targets map to the next surviving instruction. Surviving jumps receive the remapped target.
+Each rewrite stays inside a block, so no additional entry can bypass required value producers.
+Folded constants append to the existing pool. Unused constants remain to avoid another pool-remapping pass.
+This copies bytecode and retains some unused constants, but keeps ownership and existing indices explicit.
+
+Ten optimization test groups cover integer and boolean folding, numeric failures, source steps, block entries, effects, jumps, and ownership.
+Differential tests compare the interpreter, original VM, and optimized VM for values and exact runtime diagnostics.
+Eight programs at eighty step budgets and three call-depth limits provide 1920 limit combinations.
+Tests also require fewer value instructions in constant expressions and stable results from repeated optimization.
+
 ## Planned pipeline
 
 ```text

@@ -83,6 +83,10 @@ It shares numeric rules and source step limits with the interpreter and uses exp
 The `--run-vm` command compiles the source and executes `main` on the VM.
 The [VM rules](docs/language.md#phase-9-vm-rules) define the approved execution contract.
 
+Phase 10 starts with `minic::optimize_bytecode` and local constant folding in owned bytecode.
+The [optimization rules](docs/language.md#phase-10-optimization-rules) preserve source steps, numeric failures, effects, and the original input.
+Control-flow cleanup and optimized commands remain in progress.
+
 ## Build and use
 
 From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
@@ -236,10 +240,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 280 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, interpretation, bytecode, VM execution, and commands.
+The 290 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-All 280 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+The 280 tests from phase 9 also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -272,7 +276,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 7 | Functions and control flow | done |
 | 8 | Bytecode compiler | done |
 | 9 | VM (stage B, primary target) | done |
-| 10 | Local optimizations | pending |
+| 10 | Local optimizations | in progress |
 | 11 | Optional language features | pending |
 | 12 | LLVM literacy | pending |
 | 13 | Wrap-up / portfolio polish | pending |

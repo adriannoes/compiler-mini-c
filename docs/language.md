@@ -676,6 +676,31 @@ The first three commands print `720`, `55`, and `true`, respectively, and return
 The runtime-error command reports `The variable "value" has no value.` at line 3, column 15, and returns status `1`.
 The control-flow and mutual-recursion examples still require an entry for execution, while compilation alone accepts them unchanged.
 
+## Phase 10 optimization rules
+
+The approved scope optimizes bytecode without changing the AST, language, or existing command behavior.
+The API is `BytecodeProgram optimize_bytecode(const BytecodeProgram&)`.
+It accepts compiler-produced bytecode, returns an owned copy, and preserves the original program.
+Function indices, signatures, local slots, and source metadata retain their existing meaning.
+Optimization does not require an entry or repeat static analysis.
+
+Constant folding replaces successful constant operations with their computed values.
+The optimizer uses the existing signed 64-bit helpers for integer conversion, arithmetic, comparisons, and unary operations.
+If conversion or evaluation reports a runtime error, the original instructions remain for execution.
+Thus, optimization does not report overflow or division by zero before execution reaches the original operation.
+Original constants retain their digit text. Folded integer results use canonical decimal digits and a separate negative flag.
+
+Every reachable source step retains its order and position, even when the optimizer removes value operations around it.
+Step-limit and call-depth behavior must agree with the original VM and interpreter, including the first error position.
+Calls, assignments, local reads, declaration resets, and other possible effects end local constant tracking.
+The optimizer does not remove variable reads or apply identities that can suppress errors, such as replacing `x * 0` with zero.
+
+The next increment will simplify constant branches, remove unreachable code, and apply small local instruction rewrites.
+Those transformations must respect block entries and remap absolute jump targets after code removal.
+Unreachable source steps can disappear because execution never visits them.
+The planned `--bytecode-opt` and `--run-vm-opt` commands will expose optimized output and execution separately from the existing commands.
+Global constant propagation, store elimination, language changes, and binary serialization remain outside this phase.
+
 ## Planned language scope
 
 The following language scope grows phase by phase (see [roadmap.md](roadmap.md)):

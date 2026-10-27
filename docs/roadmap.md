@@ -352,9 +352,24 @@ Lookup terms: `virtual machine`, `stack machine`, `fetch-decode-execute`, `instr
 
 ## Phase 10: Local optimizations
 
+Status: in progress.
+
+The approved rules live in [language.md](language.md#phase-10-optimization-rules).
+Pass ownership and block boundaries live in [architecture.md](architecture.md#local-bytecode-optimization).
+Delivery uses three local increments:
+
+1. Owned bytecode optimization, local constant folding, numeric guards, source steps, and focused tests.
+2. Constant branches, unreachable-code cleanup, local instruction rewrites, and remapped jump targets.
+3. Optimized disassembly and execution commands, examples, documentation, and normal and sanitizer validation.
+
+Increment 1 provides `optimize_bytecode` in `minic_optimizer` and ten test groups.
+Constant folding uses runtime helpers and retains operations that can fail during execution.
+The tests compare 1920 combinations of source programs and execution limits across all three execution paths.
+Control-flow cleanup, command integration, and final validation remain pending.
+
 Lookup terms: `constant folding`, `constant propagation`, `dead code elimination`, `unreachable code`, `peephole optimization`, `local optimization`, `basic block`, `data-flow analysis`, `liveness analysis`
 
-- [ ] Constant folding (AST and/or bytecode)
+- [x] Constant folding (bytecode)
 - [ ] Trivial dead-code / unreachable cleanup where easy
 - [ ] Small peep-hole passes on bytecode
 - [ ] Tests that optimized and unoptimized runs agree
