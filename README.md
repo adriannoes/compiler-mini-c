@@ -3,7 +3,7 @@ id: readme
 title: compiler-mini-c
 type: overview
 status: active
-summary: Project purpose, current behavior, build commands, and roadmap summary.
+summary: Completed educational compiler, usage, verified examples, and project evidence.
 related:
   - id: docs-index
     path: docs/README.md
@@ -19,333 +19,190 @@ related:
     path: docs/curriculum-alignment.md
   - id: references
     path: docs/references.md
+  - id: theory-parsing
+    path: docs/theory-parsing.md
+  - id: theory-llvm
+    path: docs/theory-llvm.md
 ---
 
 # compiler-mini-c
 
-This project is an educational Mini-C compiler in C++17.
-Each stage uses hand-written code, examples, and automated tests.
-The repository records the work for a public portfolio.
+This educational Mini-C compiler uses C++17.
+It implements a manual front end, interpreter, bytecode virtual machine (VM), local optimizations, and checked local arrays.
+The approved [roadmap](docs/roadmap.md) is complete. The implementation target is the bytecode VM.
+Worked parsing notes and an independent C/LLVM laboratory provide separate study evidence.
 
-The goal is to learn undergraduate compiler concepts and apply them to general software engineering.
-The execution target is a custom bytecode virtual machine.
-Parsing theory and LLVM study support technical discussions. Specialist compiler engineering is outside the project scope.
+## Build and run
 
-The project plan is complete.
-Phase checklists and study terms live in [docs/roadmap.md](docs/roadmap.md) and [docs/references.md](docs/references.md).
-
-## Current behavior
-
-The lexer converts source text into tokens, which are units such as keywords, names, and numbers.
-The `--tokens` command prints each token with its original text, line, and column.
-The command reads a source file, skips comments, and reports lexical errors.
-
-The lexer recognizes `int`, `bool`, `void`, `if`, `else`, `while`, `return`, `true`, and `false`.
-It also recognizes identifiers, decimal integers, punctuation, and all operators in the phase 1 scope.
-The lexer chooses the longest supported operator and distinguishes division from comments.
-Phase 1 is complete, with 33 token types including `EOF`.
-The parser builds an abstract syntax tree (AST), which records program structure.
-The `--ast` command prints the tree after lexing and parsing succeed.
-The parser supports expressions, functions with parameters, named calls, local declarations, blocks, and return statements.
-It also supports `if`/`else` and `while`, including bodies without braces.
-Phase 2 is complete within the [approved grammar](docs/language.md#phase-2-grammar).
-The token and AST commands do not execute programs.
-See [docs/language.md](docs/language.md) for lexical rules, grammar, precedence, and accepted limits.
-
-Phase 3 study notes include worked FIRST/FOLLOW sets, LL(1) decisions, and a shift/reduce trace.
-They compare LR constructions and parser-generator choices in [docs/theory-parsing.md](docs/theory-parsing.md).
-
-Phase 4 provides a symbol table, nested scopes, and `minic::resolve_names` in the front-end library.
-The approved [name rules](docs/language.md#phase-4-name-rules) record visibility, shadowing, and redeclaration policies.
-The analysis returns separate declaration bindings without modifying the AST.
-The `--resolve` command prints scopes, symbols, and the declaration selected for each name use.
-
-Phase 5 provides `minic::check_types` and explicit rules for `int`, `bool`, and `void` in the front-end library.
-The approved [type rules](docs/language.md#phase-5-type-rules) define operators, declarations, calls, conditions, and returns.
-The analysis returns expression types and owns its name-resolution result without modifying the AST.
-The `--check` command analyzes the complete program and returns `0` without output when the analysis succeeds.
-
-Phase 6 provides `minic::interpret`, owned runtime values, and guarded signed 64-bit arithmetic in a separate library.
-The approved [execution rules](docs/language.md#phase-6-execution-rules) define numeric errors, initialization behavior, entry selection, and the supported subset.
-The API executes the supported subset after static analysis and returns a value that does not borrow the AST.
-The `--run` command executes `main` without parameters and prints its integer or boolean result.
-Phase 7 adds `if`/`else`, `while`, and a configurable step budget to execution.
-Function calls use isolated frames and copied parameters, including direct and mutual recursion.
-The [phase 7 rules](docs/language.md#phase-7-execution-rules) define these behaviors and the configurable execution limits.
-
-Phase 8 provides owned bytecode records, `minic::compile_bytecode`, and the `minic::print_bytecode` disassembler, which prints instructions for inspection.
-The [bytecode contract](docs/architecture.md#bytecode-format-and-compilation) defines a stack instruction set with source positions and explicit step markers.
-Compilation covers the current language after static analysis.
-The `--bytecode` command prints instructions without executing them.
-
-Phase 9 provides `minic::execute_bytecode` for entries, local variables, operations, branches, loops, calls, and returns.
-It shares numeric rules and source step limits with the interpreter and uses explicit frames for recursion.
-The `--run-vm` command compiles the source and executes `main` on the VM.
-The [VM rules](docs/language.md#phase-9-vm-rules) define the approved execution contract.
-
-Phase 10 provides `minic::optimize_bytecode`, local constant folding, unreachable-code cleanup, and small instruction rewrites in owned bytecode.
-The [optimization rules](docs/language.md#phase-10-optimization-rules) preserve source steps, numeric failures, effects, and the original input.
-The `--bytecode-opt` command prints optimized instructions, and `--run-vm-opt` executes them on the VM.
-
-Phase 11 adds fixed local `int` and `bool` arrays across syntax, name resolution, type analysis, bytecode, and execution.
-Lengths range from 1 through 1024, and brackets add two token types for a total of 35.
-The [array rules](docs/language.md#phase-11-local-arrays) define bounds, initialization, and indexed assignment order.
-The interpreter, VM, and optimized VM execute indexed reads and writes with bounds and missing-value diagnostics.
-
-Phase 12 maps those stages to Clang/LLVM and supplies a separate C/IR laboratory with annotated examples.
-The [LLVM notes](docs/theory-llvm.md) explain SSA, control-flow blocks, pass pipelines, tool roles, and the limits of this experiment.
-
-## Build and use
-
-From the repository root, configure and build with CMake 3.20 or later and a C++17 compiler:
+Use CMake 3.20 or later and a C++17 compiler.
+The compiler and its tests require no external C++ libraries, parser generator, or LLVM installation.
+From the repository root, configure and build the project:
 
 ```bash
 cmake -S . -B build
 cmake --build build
-./build/minic --tokens examples/hello.mc
-./build/minic --tokens examples/lexer.mc
-./build/minic --ast examples/hello.mc
-./build/minic --ast examples/expressions.mc
-./build/minic --ast examples/calls.mc
-./build/minic --ast examples/control_flow.mc
-./build/minic --ast examples/lexer.mc
-./build/minic --resolve examples/scopes.mc
-./build/minic --resolve examples/recursion.mc
-./build/minic --check examples/types.mc
-./build/minic --check examples/recursion.mc
-./build/minic --bytecode examples/hello.mc
-./build/minic --bytecode examples/factorial.mc
-./build/minic --run examples/interpreter.mc
-./build/minic --run examples/short_circuit.mc
-./build/minic --run examples/factorial.mc
-./build/minic --run examples/fibonacci.mc
-./build/minic --run-vm examples/factorial.mc
-./build/minic --run-vm examples/fibonacci.mc
-./build/minic --bytecode-opt examples/optimization.mc
-./build/minic --run-vm-opt examples/optimization.mc
-```
-
-The token output includes the source position and ends with `EOF`:
-
-```text
-3:1 INT "int"
-3:5 IDENTIFIER "main"
-3:9 LEFT_PAREN "("
-3:10 RIGHT_PAREN ")"
-3:12 LEFT_BRACE "{"
-4:3 RETURN "return"
-4:10 INTEGER "0"
-4:11 SEMICOLON ";"
-5:1 RIGHT_BRACE "}"
-6:1 EOF ""
-```
-
-Use `./build/minic --help` to see the available commands.
-The [lexer example](examples/lexer.mc) includes all 33 phase 1 token types, with commas in parameters and calls.
-Its expected output lives in [tests/lexer.tokens](tests/lexer.tokens).
-The [array example](examples/arrays.mc) adds both bracket tokens from phase 11.
-The [expression example](examples/expressions.mc) demonstrates precedence, grouping, and assignment without evaluating them.
-Its expected tree lives in [tests/expressions.ast](tests/expressions.ast).
-The [call example](examples/calls.mc) adds parameters, declarations, nested calls, and an empty statement.
-The [control-flow example](examples/control_flow.mc) demonstrates the nearest-`if` rule for `else` and a braced loop.
-The expected ASTs for parser examples live under `tests/`.
-
-The [scope example](examples/scopes.mc) demonstrates nested scopes, shadowing, and a call before its function definition.
-The [recursion example](examples/recursion.mc) demonstrates mutual recursion without a `main` function.
-Their complete expected resolution output lives in [tests/scopes.resolution](tests/scopes.resolution) and [tests/recursion.resolution](tests/recursion.resolution).
-`Read`, `Write`, and `Call` lines identify both the use position and its declaration symbol.
-
-Name resolution does not analyze types, argument counts, return compatibility, or definite initialization.
-For example, `int x = x;` resolves to its own declaration without establishing that `x` holds an initialized value.
-The existing expression example remains valid with `--ast` but fails with `--resolve` because `left` and `right` have no declarations.
-
-The [type example](examples/types.mc) demonstrates matching calls, boolean conditions, and compatible returns.
-The [type-error example](examples/type_error.mc) has valid syntax and names, but assigns an integer initializer to a boolean variable.
-Both `--ast` and `--resolve` accept that file.
-From the repository root, operate the type-check command after the build:
-
-```bash
-./build/minic --check examples/type_error.mc
-```
-
-The command returns `1`, prints no standard output, and writes this diagnostic to standard error:
-
-```text
-examples/type_error.mc:3:16: error: Expected type bool. Received int.
-```
-
-Type checking preserves the existing grammar and does not evaluate expressions or execute programs.
-It does not enforce numeric limits, analyze definite initialization, or require `main`.
-Non-void functions require a guaranteed return under the [conservative return rules](docs/language.md#functions-and-conditions).
-
-The [interpreter example](examples/interpreter.mc) prints `42` after assignment and nested scopes.
-The [short-circuit example](examples/short_circuit.mc) prints `true` without evaluating skipped assignments or division by zero.
-Both commands return status `0`. A `void` entry produces no output.
-The printed result does not become the process exit status.
-
-The [factorial example](examples/factorial.mc) prints `720` for `factorial(6)`.
-The [Fibonacci example](examples/fibonacci.mc) prints `55` for `fibonacci(10)`.
-Both use recursive calls with separate parameter and local values for each activation.
-The existing call, scope, and type examples also execute with `--run` and print `6`, `1`, and `2`, respectively.
-The control-flow and mutual-recursion examples lack `main`. Command tests add temporary entry functions without changing those source examples.
-
-The [runtime-error example](examples/runtime_error.mc) passes `--check` but fails with `--run` because its initializer reads a variable without a value.
-From the repository root, operate the execution command after the build:
-
-```bash
-./build/minic --run examples/runtime_error.mc
-```
-
-The command returns `1`, prints no standard output, and writes this diagnostic to standard error:
-
-```text
-examples/runtime_error.mc:3:15: error: The variable "value" has no value.
-```
-
-The interpreter rejects out-of-range literals, integer overflow, division by zero, and remainder by zero when execution reaches them.
-It completes static analysis for every function before it executes the selected entry.
-Calls, conditions, and loops execute, while syntax-only examples retain their original purpose.
-The entry still requires zero parameters, and called functions receive copied argument values.
-Execution defaults to at most 1000000 expression or statement steps and 128 active calls, including the entry.
-These limits bound loops and recursion. The CLI uses fixed defaults and adds no limit flags.
-The API accepts positive limits through `interpret(program, entry, ExecutionLimits{max_steps, max_call_depth})`.
-The original `interpret(program, entry)` API uses the defaults.
-
-The bytecode command accepts programs without `main`, including the control-flow and mutual-recursion examples.
-It also accepts runtime-error examples because compilation does not read variables or evaluate arithmetic.
-The [hello bytecode fixture](tests/hello.bytecode) records its complete instruction output:
-
-```text
-bytecode
-function 0 "main" int parameters=0 @3:5
-  constant 0 int "0"
-  0 STEP @3:12
-  1 STEP @4:3
-  2 STEP @4:10
-  3 LOAD_CONSTANT 0 @4:10
-  4 RETURN @4:3
-  5 UNREACHABLE @3:12
-end
-```
-
-Indices start at zero. `STEP` marks a source expression or statement entry, and `@line:column` records its source position.
-`UNREACHABLE` guards against internal fallthrough from a non-void function.
-The [instruction table](docs/architecture.md#bytecode-format-and-compilation) defines operands and stack effects for the VM.
-
-The `--run-vm` command prints `720` for the factorial example and `55` for the Fibonacci example.
-Both commands return status `0`. Integers and booleans include a newline, and a `void` result produces no output.
-The command compiles all functions before selecting `main`, so static errors retain priority over execution errors.
-The VM requires an entry without parameters, while `--bytecode` still accepts programs without an entry.
-The control-flow and mutual-recursion tests add temporary entries without changing their source examples.
-
-The interpreter and VM share signed 64-bit numeric rules, missing-value errors, and the default execution limits.
-Only source steps consume the budget. The VM uses explicit frames, so recursive Mini-C calls do not use recursive C++ calls.
-The API accepts custom limits through `execute_bytecode(bytecode, entry, limits)` and returns a value independent of the bytecode lifetime.
-The existing `--run` command continues to use the tree-walk interpreter.
-
-The [optimization example](examples/optimization.mc) combines constant expressions, a known branch, a discarded value, and code after a return.
-It prints `24` through `--run`, `--run-vm`, and `--run-vm-opt`, with process status `0`.
-Optimization reduces its instruction sequence from 69 instructions to 36 while preserving every executed source step.
-These counts describe generated code, without a timing claim.
-The complete outputs live in [the original fixture](tests/optimization.bytecode) and [the optimized fixture](tests/optimization.optimized.bytecode).
-
-Optimization preserves error positions, argument order, calls, local reads, and the configured execution limits.
-It retains operations that can fail when execution reaches them. It can omit operations on paths that execution never reaches.
-The optimizer retains unused pool constants and every function signature, so named entry selection remains available.
-The existing disassembly and execution commands keep their original behavior.
-
-## Local arrays
-
-The [array example](examples/arrays.mc) fills four integer elements in a loop and uses two boolean elements in a condition.
-After the build, operate the three execution commands from the repository root:
-
-```bash
-./build/minic --run examples/arrays.mc
-./build/minic --run-vm examples/arrays.mc
 ./build/minic --run-vm-opt examples/arrays.mc
+ctest --test-dir build --output-on-failure
 ```
 
-All three commands print `10`. The existing analysis and disassembly commands also accept this example.
-Expected tokens, AST, name bindings, and both disassemblies live in `tests/arrays.*`.
+The array example prints `10` and exits with status 0.
+CTest contains 398 tests. Build directories remain outside version control.
 
-An array declaration clears every element, including each time a loop executes that declaration.
-Reading an element before assignment fails at the array name position.
-The [array-error example](examples/array_error.mc) fails at line 5, column 10 because `values[1]` has no value.
-Indices must fit the declared length, and an indexed assignment checks its index before its right operand.
-Lengths range from 1 through 1024. Arrays remain local and cannot act as whole values, arguments, or return values.
-These rules teach the difference between scalar values, indexed storage, and runtime index checks without adding pointers or dynamic allocation.
+## Implemented behavior
 
-## LLVM laboratory
+| Surface | Behavior |
+|---------|----------|
+| Lexer | 35 token types, maximal munch, comments, owned text, and positions that count lines and byte columns from 1 |
+| Parser | Recursive descent, operator precedence, named calls, blocks, declarations, assignment, conditions, loops, and local arrays |
+| Name analysis | Lexical scopes, shadowing, redeclaration errors, and bindings between uses and declarations |
+| Type analysis | Distinct `int`, `bool`, and `void` rules, scalar signatures, return-path checks, and array restrictions |
+| Interpreter | Tree-walk execution with ordered evaluation, isolated calls, copied parameters, and checked arithmetic |
+| Bytecode VM | 29 opcodes, explicit frames, owned storage, recursion, and source-step accounting |
+| Optimizer | Guarded constant folding, known-branch cleanup, jump threading, and reachability cleanup |
+| Arrays | Local one-dimensional `int` or `bool` arrays, lengths from 1 through 1024, and checked indexed access |
 
-The [LLVM notes](docs/theory-llvm.md) map Mini-C stages to Clang/LLVM concepts.
-The independent C laboratory compares generated IR at `-O0` and `-O1` and checks native results from C and IR.
+Integers use the signed 64-bit range. Arithmetic reports positioned overflow and zero-divisor errors.
+Variables and array elements have no value until an initializer or assignment gives them one.
+Each function activation owns its local storage, and every executed array declaration resets all its elements.
+Indexed assignment checks and saves the index before evaluating the assigned value.
+
+Execution defaults to 1000000 source steps and 128 active calls, including the entry frame.
+The C++ APIs accept positive custom limits and another parameterless entry. The CLI executes parameterless `main` with the defaults.
+A successful integer or boolean result prints with a newline. A successful `void` result prints nothing.
+Process status is 0 on success, independently of the Mini-C return value, and 1 on failure.
+
+The [current grammar](docs/language.md#current-grammar) and [execution boundaries](docs/architecture.md#execution-boundaries) define the complete scope and limits.
+
+## Commands
+
+After the build, invoke `./build/minic` from the repository root with one mode and one source path.
+Use `./build/minic --help` for usage.
+
+| Mode | Result |
+|------|--------|
+| `--tokens <file>` | Print token types, owned source text, and positions |
+| `--ast <file>` | Print the abstract syntax tree (AST), which records parsed structure |
+| `--resolve <file>` | Print scopes, symbols, and declaration bindings |
+| `--check <file>` | Analyze names and types, with no output on success |
+| `--bytecode <file>` | Print stack instructions after static analysis |
+| `--bytecode-opt <file>` | Print optimized stack instructions |
+| `--run <file>` | Execute the analyzed program with the interpreter |
+| `--run-vm <file>` | Compile and execute the program on the VM |
+| `--run-vm-opt <file>` | Compile, optimize, and execute the program on the VM |
+
+The token and AST modes remain independent of name and type rules.
+Name resolution does not analyze types or initialization.
+Execution and bytecode modes analyze the complete source before compilation or execution.
+Diagnostics go to standard error. Failed execution prints no partial result.
+
+For example, inspect the array program before execution:
+
+```bash
+./build/minic --tokens examples/arrays.mc
+./build/minic --ast examples/arrays.mc
+./build/minic --resolve examples/arrays.mc
+./build/minic --check examples/arrays.mc
+./build/minic --bytecode examples/arrays.mc
+./build/minic --bytecode-opt examples/arrays.mc
+```
+
+## Executable examples
+
+After the build, pass an example path to `--run`, `--run-vm`, or `--run-vm-opt`.
+All three modes produce the same output and status for these examples:
+
+| Example | Demonstrates | Output |
+|---------|--------------|--------|
+| [hello.mc](examples/hello.mc) | A minimal entry function | `0` |
+| [interpreter.mc](examples/interpreter.mc) | Arithmetic, assignment, and nested scope | `42` |
+| [calls.mc](examples/calls.mc) | Parameters and nested calls | `6` |
+| [scopes.mc](examples/scopes.mc) | Shadowing and a forward function call | `1` |
+| [types.mc](examples/types.mc) | Matching types, calls, and returns | `2` |
+| [short_circuit.mc](examples/short_circuit.mc) | Logical evaluation that skips a failing operand | `true` |
+| [factorial.mc](examples/factorial.mc) | Direct recursion | `720` |
+| [fibonacci.mc](examples/fibonacci.mc) | Two recursive calls per case | `55` |
+| [optimization.mc](examples/optimization.mc) | Constant expressions, a known branch, and unreachable code | `24` |
+| [arrays.mc](examples/arrays.mc) | Integer and boolean arrays, indexed writes, calls, and a loop | `10` |
+| [lexer.mc](examples/lexer.mc) | All 33 original token types. The array example adds both brackets | `0` |
+
+For example, compare recursive execution paths:
+
+```bash
+./build/minic --run examples/factorial.mc
+./build/minic --run-vm examples/factorial.mc
+./build/minic --run-vm-opt examples/factorial.mc
+```
+
+Each command prints `720` and exits with status 0.
+
+## Analysis and error examples
+
+These files demonstrate stage boundaries or expected failures:
+
+| Example | Expected behavior |
+|---------|-------------------|
+| [expressions.mc](examples/expressions.mc) | `--ast` succeeds. Name analysis rejects undeclared `left` at line 9, column 10 |
+| [control_flow.mc](examples/control_flow.mc) | Analysis succeeds. Execution reports a missing `main` because this file defines only helper functions |
+| [recursion.mc](examples/recursion.mc) | Analysis accepts mutual recursion. Execution reports a missing `main` |
+| [type_error.mc](examples/type_error.mc) | Syntax and names succeed. Type analysis rejects an integer initializer for `bool` at line 3, column 16 |
+| [runtime_error.mc](examples/runtime_error.mc) | Type analysis succeeds. Execution rejects a variable read without a value at line 3, column 15 |
+| [array_error.mc](examples/array_error.mc) | Type analysis succeeds. Execution rejects `values[1]` without a value at line 5, column 10 |
+
+For example, after the build, operate this command from the repository root:
+
+```bash
+./build/minic --run-vm-opt examples/array_error.mc
+```
+
+It prints no standard output and exits with status 1. Its diagnostic is:
+
+```text
+examples/array_error.mc:5:10: error: The array element "values[1]" has no value.
+```
+
+## Studied concepts and LLVM laboratory
+
+The [parsing notes](docs/theory-parsing.md) contain worked FIRST/FOLLOW sets, LL(1) decisions, and a shift/reduce trace.
+They compare LR constructions and parser-generator trade-offs without adding a generated parser.
+
+The [LLVM notes](docs/theory-llvm.md) map the implemented stages to Clang/LLVM.
+A separate C laboratory compares generated LLVM intermediate representation (IR) at `-O0` and `-O1` and follows the loop's value selections.
 With Clang and CMake available, operate it from the repository root:
 
 ```bash
 cmake -P tests/llvm_lab.cmake
 ```
 
-All four native executions check five cases, print `10`, and return status 0.
-The command keeps generated files in ignored `build-llvm-lab/` and records the compiler version and results there.
-It adds no dependency to the Mini-C build. The compiler does not emit LLVM IR.
+Four native executions check five bounded cases each, print `10`, and exit with status 0.
+The script records the compiler version and results under ignored `build-llvm-lab/`.
+The annotated IR examples record Apple Clang 17.0.0 and its target metadata.
+The Mini-C compiler emits bytecode. Native C laboratory results do not establish a native Mini-C backend.
 
-## Tests
+## Validation and limits
 
-After the build, run the tests from the repository root:
+The compiler suite contains 398 CTest cases for stages, commands, values, source positions, diagnostics, ownership, and execution limits.
+Differential cases compare the interpreter, VM, and optimized VM, including stopped execution and runtime failures.
+The gallery checks all 17 Mini-C files across the three execution modes.
+The [tooling reference](docs/tech-stack.md#sanitizer-validation) records the 398-test AddressSanitizer/UndefinedBehaviorSanitizer baseline from phase 11 and its reproduction commands.
+The compiler sources and CMake targets retain that baseline's contents through the documentation and LLVM study phases.
 
-```bash
-ctest --test-dir build --output-on-failure
-```
+The language excludes pointers, structs, unions, strings, floating-point values, globals, prototypes, and dynamic allocation.
+Arrays cannot act as whole values, parameters, or return values. The language excludes initializer lists and multidimensional arrays.
+The project implements no general dataflow framework, register allocation, garbage collector, JIT, binary bytecode loader, or LLVM backend.
+Standalone `opt` and `llc` execution remains optional and deferred.
+Runtime budgets do not bound parser nesting, source size, native stack use, or total memory. This project is an educational compiler rather than a sandbox.
+The [coverage report](docs/curriculum-alignment.md) separates implemented work, completed study exercises, and excluded capabilities.
 
-The 398 tests cover tokens, AST structure, source positions, names, types, interpretation, bytecode, VM execution, optimization, arrays, and commands.
-CTest runs the tests without an external test library.
-The command tests compare output, diagnostics, and exit codes.
-All 398 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer, with no compiler warnings in either build.
-The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
+## Documentation
 
-## Docs
-
-| Doc | What it covers |
-|-----|----------------|
-| [docs/README.md](docs/README.md) | Index and front-matter conventions |
-| [docs/roadmap.md](docs/roadmap.md) | Full learning plan, checklists, lookup terms |
-| [docs/references.md](docs/references.md) | Suggested books and per-phase search terms |
-| [docs/tech-stack.md](docs/tech-stack.md) | Tools, language, build |
-| [docs/language.md](docs/language.md) | Mini-C scope and design choices |
-| [docs/architecture.md](docs/architecture.md) | Compiler pipeline map |
-| [docs/curriculum-alignment.md](docs/curriculum-alignment.md) | Course coverage, career goals, and this plan |
-| [docs/theory-parsing.md](docs/theory-parsing.md) | First/Follow and bottom-up parsing (literacy) |
-| [docs/theory-llvm.md](docs/theory-llvm.md) | LLVM concepts for conversation fluency |
-
-## Todo (summary)
-
-Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
-
-| Phase | Topic | Status |
-|------:|-------|--------|
-| 0 | Project scaffold | done |
-| 1 | Lexer (+ tests) | done |
-| 2 | Recursive-descent parser | done |
-| 3 | Parsing theory (First/Follow, bottom-up) | done |
-| 4 | Symbol table / scopes | done |
-| 5 | Type checking | done |
-| 6 | Tree-walk interpreter (stage A) | done |
-| 7 | Functions and control flow | done |
-| 8 | Bytecode compiler | done |
-| 9 | VM (stage B, primary target) | done |
-| 10 | Local optimizations | done |
-| 11 | Optional language features | done |
-| 12 | LLVM literacy | done |
-| 13 | Wrap-up / portfolio polish | in progress |
-
-Phase 2 delivers syntax and AST output, and phase 3 records the related theory.
-Phase 4 adds name resolution without changing those syntax contracts.
-Phase 5 adds type analysis and the independent `--check` command.
-Phase 6 executes the expression and block subset through `--run`.
-Phase 7 adds calls, control flow, and recursion before bytecode and VM work.
-Phase 8 compiles the same language to inspectable bytecode.
-Phase 9 executes bytecode with explicit frames and compares its results and diagnostics with the interpreter.
-Phase 10 optimizes bytecode with guarded constant folding and local control-flow cleanup.
-Phase 11 adds local arrays with checked indices and independent storage for each function activation.
-Phase 12 records LLVM concepts and a reproducible C/IR laboratory with native result checks.
-See [docs/tech-stack.md](docs/tech-stack.md) for build requirements and conventions.
+| Document | Purpose |
+|----------|---------|
+| [Architecture](docs/architecture.md#reference-map) | Pipeline, ownership, complete instruction set, limits, and build commands |
+| [Language](docs/language.md#current-grammar) | Current grammar, types, evaluation order, diagnostics, and accepted limits |
+| [Coverage](docs/curriculum-alignment.md) | Project evidence and comparisons with cited course material |
+| [Parsing theory](docs/theory-parsing.md) | FIRST/FOLLOW, LL/LR examples, and generator decisions |
+| [LLVM study](docs/theory-llvm.md) | Stage mapping, annotated IR, tool roles, and a separate native laboratory |
+| [Tooling](docs/tech-stack.md) | Dependencies, build, tests, laboratory, and sanitizer commands |
+| [Roadmap](docs/roadmap.md) | Completed required phases and deferred optional work |
+| [References](docs/references.md) | Books and study terms by phase |
+| [Documentation index](docs/README.md) | Catalog and front-matter conventions |

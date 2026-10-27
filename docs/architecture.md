@@ -720,7 +720,7 @@ The main deliverable remains the bytecode virtual machine.
 | Source steps | Default `max_steps = 1000000`, shared across active calls and charged only on executed source entries |
 | Call depth | Default `max_call_depth = 128`, including the entry frame |
 | Limit configuration | Positive API limits through `ExecutionLimits`, with no CLI configuration flags |
-| Entry | The CLI executes parameterless `main`. APIs permit another entry name |
+| Entry | The CLI executes parameterless `main`. APIs permit another parameterless entry |
 | CLI result | Completed non-void results print with a newline. Success exits with status 0, independently of the Mini-C value |
 | Bytecode | Owned records for compiler-produced control flow, with no binary serialization or arbitrary-program verification |
 | Deep source trees | Parsing, analysis, compilation, and interpreter evaluation still use the native C++ stack |

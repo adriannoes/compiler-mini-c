@@ -30,6 +30,7 @@ related:
 High-level status lives in [../README.md](../README.md). This file holds the detailed plan.
 
 Planning status: closed. Study companions and index search terms: [references.md](references.md).
+Delivery status: complete. Every required phase is complete, and optional standalone LLVM experiments remain deferred.
 
 The goal is a complete Mini-C front end and bytecode virtual machine for the portfolio.
 The study plan also covers undergraduate theory, especially bottom-up parsing, and LLVM concepts for technical discussions.
@@ -52,7 +53,7 @@ Lookup terms: `compiler architecture`, `front end`, `back end`, `middle end`, `p
 - [x] Build on this machine (`cmake` + C++17)
 - [x] Align plan with typical syllabi and market transfer skills
 - [x] Book/lookup guide in [references.md](references.md)
-- [ ] Keep docs cross-linked as the project grows
+- [x] Keep docs cross-linked as the project grows
 
 ## Phase 1: Lexer
 
@@ -451,7 +452,7 @@ Lookup terms: `LLVM IR`, `SSA`, `static single assignment`, `basic block`, `phi 
 
 ## Phase 13: Wrap-up
 
-Status: in progress. This phase consolidates the completed implementation and its portfolio evidence.
+Status: complete. This phase consolidates the completed implementation and its portfolio evidence.
 Delivery uses three local increments:
 
 1. Consolidate current grammar, the complete VM instruction set, execution limits, and build instructions.
@@ -463,9 +464,16 @@ The current 398-test baseline and four LLVM laboratory checks pass before this p
 The phase changes documentation rather than compiler behavior, examples, commands, or dependencies.
 Increment 2 records implemented topics, completed study exercises, and excluded capabilities with local evidence links.
 It also refreshes the cited Stanford, MIT Spring 2025, and Harvard Fall 2019 comparisons against their official pages.
+Increment 3 completes the README with build instructions, all nine modes, a gallery, accepted limits, and links to study evidence.
+All nine modes run against all 17 Mini-C examples, for 153 command results with expected status and stage behavior.
+All three execution modes agree on output, diagnostics, and exit status for every example.
+The final normal build passes all 398 CTest cases, and the separate LLVM laboratory passes its four native checks.
+The build compiles without warnings. The prose scan reports no findings, and all local documentation links and anchors resolve.
+This phase changes only Markdown files. Compiler sources and CMake targets retain the phase 11 sanitizer baseline's contents.
 
 Lookup terms: `BNF`, `EBNF`, `compiler architecture`, `front end`, `back end`, `middle end`
 
 - [x] Final notes in [architecture.md](architecture.md): BNF, ISA, limits, how to run tests
 - [x] Update [curriculum-alignment.md](curriculum-alignment.md) with what was actually covered
-- [ ] Portfolio polish: README accuracy, example gallery, clear "what I built / what I studied"
+- [x] Portfolio polish: README accuracy, example gallery, clear "what I built / what I studied"
+- [x] Final normal tests, example commands, LLVM laboratory, prose scan, and documentation link checks

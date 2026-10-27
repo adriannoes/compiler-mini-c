@@ -30,7 +30,7 @@ related:
 | Host language | C++17 | Matches the college compilers course style |
 | Build | CMake 3.20+ | Out-of-source builds in `build/` |
 | Binary | `minic` | CLI entry point under `src/main.cpp` |
-| Tests | CTest and a C++ test executable | Unit tests and command tests under `tests/` |
+| Tests | CTest and C++ test executables | Unit tests and command tests under `tests/` |
 | VCS | Git (local) | Public GitHub later for portfolio |
 | LLVM tools | Optional (phase 12) | `clang -emit-llvm`, `opt`, `llc` for literacy labs only |
 
@@ -50,6 +50,7 @@ compiler-mini-c/
 ├── README.md              # overview + todo summary
 ├── docs/                  # focused docs (this folder)
 ├── examples/              # Mini-C sample programs (.mc)
+│   └── llvm/              # independent C sources and reference LLVM IR
 ├── src/                   # compiler sources
 └── tests/                 # automated checks
 ```
@@ -121,6 +122,15 @@ ASAN_OPTIONS=halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 \
 The phase 11 validation passes all 398 tests in both normal and sanitizer builds on Apple Clang 17.
 Both builds compile without warnings.
 Build directories remain outside version control.
+
+## Final project audit
+
+The phase 13 normal build passes all 398 CTest cases without compiler warnings.
+The example audit operates all nine modes on all 17 Mini-C files and compares the three execution modes, including failures.
+Those 153 command results agree with the README gallery and stage boundaries.
+The separate LLVM laboratory also passes all four native executions, with five bounded cases each.
+The final prose scan reports no findings. Local documentation links, heading anchors, and front-matter paths resolve.
+The documentation phase changes no compiler source, example, test, target, or dependency.
 
 ## Conventions
 
