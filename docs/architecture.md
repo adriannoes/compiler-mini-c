@@ -351,7 +351,7 @@ Return propagation and block cleanup define execution order without requiring fu
 ## Interpreter validation and limits
 
 Phase 6 adds six numeric test groups, sixteen interpreter API groups, and twenty-one command tests.
-The complete suite contains 162 CTest tests, including the original token, AST, resolution, and type-analysis contracts.
+That phase ends with 162 CTest tests, including the original token, AST, resolution, and type-analysis contracts.
 All 162 pass in both normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
 The commands live in [tech-stack.md](tech-stack.md#sanitizer-validation).
 
@@ -395,9 +395,19 @@ The entry counts as depth one, and returning frees capacity for later calls.
 The shared step counter continues across calls and returns, so nested calls cannot reset the execution budget.
 Limit failures identify the called function or the next statement or expression as specified in the language rules.
 
-The final increment will add factorial and Fibonacci examples and complete command regression coverage.
+The factorial and Fibonacci examples exercise one and two recursive calls per recursive case, respectively.
 Bytecode and VM work remain in their later roadmap phases.
 The existing analysis modes remain independent of execution limits.
+
+Phase 7 adds thirteen interpreter API groups and ten command tests, for 185 tests in the complete suite.
+Existing call and control-flow cases now require successful execution instead of unsupported-node errors.
+The new groups cover frame isolation, copied parameters, argument order, return propagation, recursion, and both execution limits.
+Command tests compare exact example results, callee diagnostics, limit positions, empty error output, and exit codes.
+All 185 tests pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings on Apple Clang 17.
+
+Function evaluation still uses the C++ call stack, and a larger configured call-depth limit can exceed the available native stack.
+Parsing, static analysis, and deeply nested AST evaluation also retain their existing native-stack limits.
+The default call-depth limit passes the recursive error cases under both sanitizers.
 
 ## Planned pipeline
 

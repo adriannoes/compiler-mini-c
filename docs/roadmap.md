@@ -248,7 +248,7 @@ Lookup terms: `interpreter`, `tree-walk interpreter`, `evaluation`, `operational
 
 ## Phase 7: Functions and control flow
 
-Status: in progress.
+Status: complete.
 
 The approved rules live in [language.md](language.md#phase-7-execution-rules).
 Frame ownership and limit design live in [architecture.md](architecture.md#function-execution-and-limits).
@@ -266,16 +266,21 @@ Increment 2 is complete: stable, exclusively owned frames isolate parameter and 
 Calls reuse static bindings and support copied arguments, direct recursion, mutual recursion, and returns through control flow.
 Eight new API groups cover parameters, argument order, recursive locals, mutual recursion, call returns and errors, depth, and shared budgets.
 The existing call group and command case now expect successful execution.
-Examples and final validation remain pending. Phase 7 is not complete.
+
+Increment 3 is complete: factorial and Fibonacci execute through `--run` and print `720` and `55`.
+Ten new command tests cover those examples, existing execution examples, mutual recursion, limit diagnostics, and errors inside calls.
+The control-flow and mutual-recursion tests add temporary entries to preserve their existing source fixtures.
+All 185 tests pass in normal and AddressSanitizer/UndefinedBehaviorSanitizer builds without compiler warnings.
+The prose scan reports no findings. Bytecode and VM work retain their later phase boundaries.
 
 Lookup terms: `activation record`, `stack frame`, `calling convention`, `parameter passing`, `call stack`, `control flow`, `recursion`
 
 - [x] `if` / `while` working in the interpreter
 - [x] Execution step limits
 - [x] Function frames, parameters, calls, and call-depth limits
-- [ ] Examples: factorial, fibonacci
+- [x] Examples: factorial, fibonacci
 - [x] Regression tests for call/return and recursion
-- [ ] Final normal and sanitizer validation
+- [x] Final normal and sanitizer validation
 
 ## Phase 8: Bytecode compiler
 

@@ -28,7 +28,7 @@ void print_usage() {
       << "Use --ast to print the syntax tree.\n"
       << "Use --resolve to print scopes, symbols, and name bindings.\n"
       << "Use --check to analyze Mini-C types.\n"
-      << "Use --run to execute the supported Mini-C subset.\n";
+      << "Use --run to execute Mini-C programs.\n";
 }
 
 }  // namespace

@@ -67,6 +67,7 @@ cmake --build build
 ./build/minic --resolve examples/scopes.mc
 ./build/minic --check examples/types.mc
 ./build/minic --run examples/interpreter.mc
+./build/minic --run examples/factorial.mc
 ctest --test-dir build --output-on-failure
 ```
 
@@ -84,16 +85,16 @@ Both use compiler instrumentation and add no project dependency.
 From the repository root, create a separate Debug build with Clang:
 
 ```bash
-cmake -S . -B build-interpreter-sanitize \
+cmake -S . -B build-functions-sanitize \
   -DCMAKE_BUILD_TYPE=Debug \
   -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' \
   -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
-cmake --build build-interpreter-sanitize
+cmake --build build-functions-sanitize
 ASAN_OPTIONS=halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 \
-  ctest --test-dir build-interpreter-sanitize --output-on-failure
+  ctest --test-dir build-functions-sanitize --output-on-failure
 ```
 
-The phase 6 validation passes all 162 tests in both normal and sanitizer builds on Apple Clang 17.
+The phase 7 validation passes all 185 tests in both normal and sanitizer builds on Apple Clang 17.
 Both builds compile without warnings.
 Build directories remain outside version control.
 

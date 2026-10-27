@@ -434,8 +434,7 @@ An empty program also succeeds because the checker does not require `main`.
 
 The phase 6 interpreter evaluates expressions, declarations, assignments, blocks, empty statements, and returns.
 Phase 7 extends this foundation with conditions, loops, and function calls.
-Conditions, loops, function calls, and recursive activations are available.
-The value library, `interpret` API, and `--run` command provide this subset.
+The value library, `interpret` API, and `--run` command provide these behaviors.
 
 ### Values and numeric limits
 
@@ -504,7 +503,9 @@ After the build, operate `./build/minic --run examples/interpreter.mc` from the 
 The command prints `42` and returns status `0`.
 `./build/minic --run examples/short_circuit.mc` prints `true` and returns status `0`.
 The [runtime-error example](../examples/runtime_error.mc) passes static analysis but fails on its initializer at line 3, column 15.
-The call, control-flow, and syntax-study examples were not all executable within the phase 6 subset.
+The [call example](../examples/calls.mc) prints `6` with `--run`.
+The control-flow and mutual-recursion examples require an entry function. Their command tests add one in temporary files.
+Syntax-only examples retain their earlier analysis contracts.
 
 ### Runtime diagnostics
 
@@ -581,9 +582,16 @@ Static analysis does not consume the runtime budget.
 The step limit reports `The execution step limit was reached.` at the next node that would exceed the budget.
 The call-depth limit counts active frames, including the entry as depth one.
 It reports `The call depth limit was reached.` when another frame would exceed the limit.
-Its error identifies the called function name when another frame would exceed the limit.
+The diagnostic identifies the called function name.
 Arguments complete evaluation before the interpreter attempts to enter that frame.
 Limits stop nonterminating loops and recursion without changing the success output or failure status contract.
+
+### Recursive examples
+
+The [factorial example](../examples/factorial.mc) computes `factorial(6)` with a base case and one recursive call per remaining case.
+The [Fibonacci example](../examples/fibonacci.mc) computes `fibonacci(10)` with two recursive calls per remaining case.
+Each call receives its own copy of `n`, and intermediate values remain in the caller during nested calls.
+With `--run`, these examples print `720` and `55`, respectively, and return process status `0`.
 
 ## Planned language scope
 

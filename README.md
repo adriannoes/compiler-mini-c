@@ -93,6 +93,8 @@ cmake --build build
 ./build/minic --check examples/recursion.mc
 ./build/minic --run examples/interpreter.mc
 ./build/minic --run examples/short_circuit.mc
+./build/minic --run examples/factorial.mc
+./build/minic --run examples/fibonacci.mc
 ```
 
 The token output includes the source position and ends with `EOF`:
@@ -152,6 +154,12 @@ The [short-circuit example](examples/short_circuit.mc) prints `true` without eva
 Both commands return status `0`. A `void` entry produces no output.
 The printed result does not become the process exit status.
 
+The [factorial example](examples/factorial.mc) prints `720` for `factorial(6)`.
+The [Fibonacci example](examples/fibonacci.mc) prints `55` for `fibonacci(10)`.
+Both use recursive calls with separate parameter and local values for each activation.
+The existing call, scope, and type examples also execute with `--run` and print `6`, `1`, and `2`, respectively.
+The control-flow and mutual-recursion examples lack `main`. Command tests add temporary entry functions without changing those source examples.
+
 The [runtime-error example](examples/runtime_error.mc) passes `--check` but fails with `--run` because its initializer reads a variable without a value.
 From the repository root, operate the execution command after the build:
 
@@ -169,6 +177,10 @@ The interpreter rejects out-of-range literals, integer overflow, division by zer
 It completes static analysis for every function before it executes the selected entry.
 Calls, conditions, and loops execute, while syntax-only examples retain their original purpose.
 The entry still requires zero parameters, and called functions receive copied argument values.
+Execution defaults to at most 1000000 expression or statement steps and 128 active calls, including the entry.
+These limits bound loops and recursion. The CLI uses fixed defaults and adds no limit flags.
+The API accepts positive limits through `interpret(program, entry, ExecutionLimits{max_steps, max_call_depth})`.
+The original `interpret(program, entry)` API uses the defaults.
 
 ## Tests
 
@@ -178,10 +190,10 @@ After the build, run the tests from the repository root:
 ctest --test-dir build --output-on-failure
 ```
 
-The 175 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, and commands.
+The 185 tests cover tokens, positions, lexical errors, AST structure, syntax errors, names, types, execution, and commands.
 CTest runs the tests without an external test library.
 The command tests compare output, diagnostics, and exit codes.
-The original 162 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
+All 185 tests also pass with AddressSanitizer and UndefinedBehaviorSanitizer.
 The sanitizer commands live in [docs/tech-stack.md](docs/tech-stack.md#sanitizer-validation).
 
 ## Docs
@@ -211,7 +223,7 @@ Source of truth for details: [docs/roadmap.md](docs/roadmap.md).
 | 4 | Symbol table / scopes | done |
 | 5 | Type checking | done |
 | 6 | Tree-walk interpreter (stage A) | done |
-| 7 | Functions and control flow | in progress |
+| 7 | Functions and control flow | done |
 | 8 | Bytecode compiler | pending |
 | 9 | VM (stage B, primary target) | pending |
 | 10 | Local optimizations | pending |

@@ -116,7 +116,10 @@ if(BUILD_TESTING)
                         run_missing_entry run_entry_parameters run_calls
                         run_conditional run_loop run_type_error
                         run_resolution_error run_syntax_error run_lexical_error
-                        run_missing_file run_missing_argument run_extra_argument)
+                        run_missing_file run_missing_argument run_extra_argument
+                        run_factorial run_fibonacci run_scopes run_types run_lexer
+                        run_control_flow run_mutual_recursion run_step_limit run_call_depth
+                        run_callee_error)
     add_test(NAME cli.${case}
       COMMAND ${CMAKE_COMMAND}
         "-DMINIC=$<TARGET_FILE:minic>"
@@ -126,4 +129,6 @@ if(BUILD_TESTING)
         -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_test.cmake"
     )
   endforeach()
+  set_tests_properties(cli.run_step_limit PROPERTIES TIMEOUT 30)
+  set_tests_properties(cli.run_call_depth PROPERTIES TIMEOUT 10)
 endif()
