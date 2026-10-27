@@ -50,7 +50,7 @@ Lookup terms: `compiler architecture`, `front end`, `back end`, `middle end`, `p
 
 - [x] Local repo and CMake skeleton
 - [x] Split docs (README summary + focused docs with front matter)
-- [x] Build on this machine (`cmake` + C++17)
+- [x] Build on this machine (`cmake` + C++)
 - [x] Align plan with typical syllabi and market transfer skills
 - [x] Book/lookup guide in [references.md](references.md)
 - [x] Keep docs cross-linked as the project grows

@@ -732,7 +732,7 @@ The [language contract](language.md) specifies accepted syntax and semantics in 
 
 ## Build and validation
 
-From the repository root, configure the C++17 project with CMake 3.20 or later:
+From the repository root, configure the C++ project with CMake 3.20 or later:
 
 ```bash
 cmake -S . -B build

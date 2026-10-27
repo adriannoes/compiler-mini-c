@@ -27,7 +27,7 @@ related:
 
 | Layer | Choice | Notes |
 |-------|--------|-------|
-| Host language | C++17 | Matches the college compilers course style |
+| Host language | C++ | Matches the college compilers course style |
 | Build | CMake 3.20+ | Out-of-source builds in `build/` |
 | Binary | `minic` | CLI entry point under `src/main.cpp` |
 | Tests | CTest and C++ test executables | Unit tests and command tests under `tests/` |

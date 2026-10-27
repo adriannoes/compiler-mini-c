@@ -23,6 +23,8 @@ related:
     path: theory-llvm.md
   - id: references
     path: references.md
+  - id: publication
+    path: publication.md
 ---
 
 # Documentation
@@ -56,3 +58,4 @@ When you add a doc, give it an `id`, list it here, and add it under `related` on
 | `curriculum-alignment` | [curriculum-alignment.md](curriculum-alignment.md) | reference |
 | `theory-parsing` | [theory-parsing.md](theory-parsing.md) | theory |
 | `theory-llvm` | [theory-llvm.md](theory-llvm.md) | theory |
+| `publication` | [publication.md](publication.md) | plan |

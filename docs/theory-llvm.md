@@ -108,7 +108,7 @@ The `-fno-discard-value-names` flag retains descriptive IR names for the reading
 The committed IR examples record one compiler and target. Generated names and instruction layouts can differ with another compiler version.
 The exercise compares observed structures and results instead of requiring identical IR text on every host.
 
-The compiler build and its 398 tests retain their C++17 and CMake requirements.
+The compiler build and its 398 tests retain their C++ and CMake requirements.
 Clang serves only this separate laboratory. The exercise adds no Mini-C command, language rule, or execution backend.
 Standalone `opt` and `llc` execution remains optional because neither tool is available on this host's `PATH`.
 The laboratory demonstrates LLVM concepts without installing tools or depending on LLVM libraries.

@@ -27,14 +27,14 @@ related:
 
 # compiler-mini-c
 
-This educational Mini-C compiler uses C++17.
+This educational Mini-C compiler uses C++.
 It implements a manual front end, interpreter, bytecode virtual machine (VM), local optimizations, and checked local arrays.
 The approved [roadmap](docs/roadmap.md) is complete. The implementation target is the bytecode VM.
 Worked parsing notes and an independent C/LLVM laboratory provide separate study evidence.
 
 ## Build and run
 
-Use CMake 3.20 or later and a C++17 compiler.
+Use CMake 3.20 or later and a C++ compiler.
 The compiler and its tests require no external C++ libraries, parser generator, or LLVM installation.
 From the repository root, configure and build the project:
 
@@ -206,3 +206,7 @@ The [coverage report](docs/curriculum-alignment.md) separates implemented work, 
 | [Roadmap](docs/roadmap.md) | Completed required phases and deferred optional work |
 | [References](docs/references.md) | Books and study terms by phase |
 | [Documentation index](docs/README.md) | Catalog and front-matter conventions |
+
+## License
+
+This project uses the MIT License. See [LICENSE](LICENSE) for its terms.

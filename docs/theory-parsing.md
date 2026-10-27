@@ -322,7 +322,7 @@ The prediction model and rewriting appear in the authors' [ALL(*) technical repo
 | ANTLR 4 | A shared grammar that benefits from adaptive top-down prediction | Generator and runtime integration add dependencies and prediction behavior to learn | Generated recursive-descent parsing with grammar-driven prediction |
 
 These are project selection criteria, rather than performance measurements.
-Mini-C keeps manual recursive descent because it exposes grammar decisions and AST ownership within the existing C++17 code.
+Mini-C keeps manual recursive descent because it exposes grammar decisions and AST ownership within the existing C++ code.
 That choice avoids a generator integration task and keeps the learning work focused on each compiler stage.
 The author must maintain precedence, ambiguity policies, and syntax tests.
 The phase 3 examples require no new dependency or production parser code.
@@ -382,4 +382,4 @@ The statement grammar also uses an explicit rule that attaches `else` to the nea
 
 LR parsers use shifts and reductions to reconstruct a rightmost derivation in reverse.
 Their LR(0), SLR, LALR, and canonical LR(1) constructions differ in reduction context and table size.
-I kept the manual parser to study grammar decisions, AST construction, and diagnostics within C++17.
+I kept the manual parser to study grammar decisions, AST construction, and diagnostics within C++.
