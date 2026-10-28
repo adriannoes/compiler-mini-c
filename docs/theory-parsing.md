@@ -305,7 +305,11 @@ See [Bison's reduce/reduce discussion](https://www.gnu.org/software/bison/manual
 
 A conflict alone does not prove that the original grammar is ambiguous.
 For example, merging LALR states can introduce conflicts that canonical LR(1) avoids.
-Two distinct derivations of the same complete input do establish ambiguity.
+Two distinct parse trees for the same complete input establish ambiguity.
+Equivalently, two distinct leftmost derivations for that input establish ambiguity.
+Different expansion orders can produce the same parse tree without ambiguity.
+See [Aho's grammar lecture](https://www.cs.columbia.edu/~aho/cs4115/Lectures/15-02-09.html) for this distinction.
+
 Studying LR makes these conflict reports readable even when the project uses recursive descent.
 
 ## Generator trade-offs

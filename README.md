@@ -34,7 +34,7 @@ Worked parsing notes and an independent C/LLVM laboratory provide separate study
 
 ## Build and run
 
-Use CMake 3.20 or later and a C++ compiler.
+Use CMake 3.20 or later and a compiler with C++17 support.
 The compiler and its tests require no external C++ libraries, parser generator, or LLVM installation.
 From the repository root, configure and build the project:
 

@@ -2,8 +2,8 @@
 id: publication
 title: Portfolio publication
 type: plan
-status: draft
-summary: Publication proposal, checked local evidence, pending decisions, and commands for an approved GitHub publication.
+status: active
+summary: Approved source publication, local preparation evidence, and GitHub publication commands.
 related:
   - id: docs-index
     path: README.md
@@ -19,24 +19,24 @@ related:
 
 # Portfolio publication
 
-The compiler roadmap is complete on local `main` at `170dbb5`.
-This plan prepares a GitHub portfolio publication. Repository creation and push remain separate, unexecuted actions.
-Adrianno must approve repository creation and give explicit approval before each push, as required by the working agreement.
-Local commit commands also require his authorization.
+The compiler roadmap reached completion on local `main` at `170dbb5`.
+This document records the preparation for the first public GitHub publication.
+On October 28, 2026, Adrianno approved the documentation commit, integration into `main`, public repository creation, and first push.
+Each later commit requires his authorization, and each later push requires separate confirmation.
 
-## Proposed repository
+## Approved repository
 
-| Field | Proposal |
+| Field | Choice |
 |-------|----------|
 | Owner | `adriannoes`, from an authenticated GitHub API query |
 | Name | `compiler-mini-c` |
-| Visibility | Public, subject to publication approval |
+| Visibility | Public, approved by Adrianno |
 | Published branch | `main` |
 | Git transport | HTTPS, from the current GitHub CLI configuration |
 | License | [MIT](../LICENSE), selected by Adrianno for the educational project |
 | Source of presentation | The root [README](../README.md), with linked examples and technical notes |
 
-Proposed description:
+Repository description:
 
 ```text
 Educational Mini-C compiler in C++ with a bytecode VM, local optimizations, checked arrays, and parsing/LLVM study notes.
@@ -44,6 +44,16 @@ Educational Mini-C compiler in C++ with a bytecode VM, local optimizations, chec
 
 Suggested topics are `compiler`, `compiler-design`, `cplusplus`, `bytecode`, `virtual-machine`, `parsing`, and `education`.
 Topics are suggestions, rather than configured repository metadata.
+
+## Publication scope
+
+Adrianno selected a source publication without continuous integration (CI), which runs builds and tests automatically.
+This study project retains its local CMake, CTest, and sanitizer commands.
+The publication adds no GitHub Actions workflow.
+
+The October 28 review found no reproducible functional defect in the tested compiler behavior.
+It identified a parsing-theory correction, reference prose edits, and an explicit C++17 prerequisite for the README.
+The theory correction distinguishes multiple parse trees from different expansion orders within one tree.
 
 ## Checked evidence
 
@@ -67,12 +77,13 @@ These observations describe the local baseline and read-only queries from Octobe
 | CI and releases | No GitHub Actions workflow or release configured in this local project |
 
 The limited pattern scan does not establish the absence of all sensitive content.
-API authentication succeeds for `adriannoes`. Git transport authentication and repository creation permissions remain untested.
+The October 27 review authenticated as `adriannoes` through the API.
+That review did not test Git transport authentication or repository creation permissions.
 HTTP 404 does not reserve the proposed name. Repeat the target query before creation.
 
 The README explains build commands, execution modes, example results, and accepted limits.
 GitHub recognizes root README files and supports the project's relative links, as described in its [README documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes).
-Rendered GitHub pages remain uninspected because publication has not occurred.
+The October 27 review did not inspect rendered GitHub pages because it preceded publication.
 
 ## Portfolio introduction
 
@@ -110,7 +121,8 @@ gh api user --jq .login
 gh repo view adriannoes/compiler-mini-c --json nameWithOwner,url,visibility,defaultBranchRef
 ```
 
-The current target query returns HTTP 404. If a repository now appears, stop and assess its contents before proceeding.
+The October 27 target query returned HTTP 404.
+If a repository now appears, stop and assess its contents before proceeding.
 After Adrianno explicitly approves public repository creation, use the existing local source:
 
 ```bash
