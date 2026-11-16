@@ -1,35 +1,10 @@
----
-id: readme
-title: compiler-mini-c
-type: overview
-status: active
-summary: A C++17 compiler study project, its implementation choices, runnable examples, and validation.
-related:
-  - id: docs-index
-    path: docs/README.md
-  - id: roadmap
-    path: docs/roadmap.md
-  - id: tech-stack
-    path: docs/tech-stack.md
-  - id: language
-    path: docs/language.md
-  - id: architecture
-    path: docs/architecture.md
-  - id: curriculum-alignment
-    path: docs/curriculum-alignment.md
-  - id: references
-    path: docs/references.md
-  - id: theory-parsing
-    path: docs/theory-parsing.md
-  - id: theory-llvm
-    path: docs/theory-llvm.md
----
-
 # Compiler Mini-C
 
 I built this project to study how source code becomes a running program. Mini-C is a small C-like language with functions, static types, control flow, recursion, and local arrays.
 
-The implementation uses C++ and the standard library, with no external C++ libraries or parser generator.
+This compiler uses C++17 and the standard library, with no external C++ libraries or parser generator.
+I continued the study with a second implementation of the same language, [Mini-C in Rust](https://github.com/adriannoes/compiler-mini-rust).
+The Rust tests run both compilers on the same examples and compare their bytecode, output, and error messages.
 
 The project includes an interpreter that evaluates the parsed program directly and a compiler that produces bytecode.
 Bytecode is an instruction sequence for a virtual machine (VM).
