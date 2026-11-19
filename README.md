@@ -5,6 +5,7 @@ I built this project to study how source code becomes a running program. Mini-C 
 This compiler uses C++17 and the standard library, with no external C++ libraries or parser generator.
 I continued the study with a second implementation of the same language, [Mini-C in Rust](https://github.com/adriannoes/compiler-mini-rust).
 The Rust tests run both compilers on the same examples and compare their bytecode, output, and error messages.
+The third implementation, [Mini-C in Python](https://github.com/adriannoes/compiler-mini-python), includes a script that compares standard output, standard error, and exit status across all three compilers.
 
 The project includes an interpreter that evaluates the parsed program directly and a compiler that produces bytecode.
 Bytecode is an instruction sequence for a virtual machine (VM).
